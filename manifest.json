@@ -1,0 +1,24 @@
+{
+  "name": "온전한 하루 · Wholeness",
+  "short_name": "온전한 하루",
+  "description": "영육강건 — 영적, 신체, 마음을 함께 돌보는 하루 기록 앱",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#F5F2EC",
+  "theme_color": "#F5F2EC",
+  "lang": "ko",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

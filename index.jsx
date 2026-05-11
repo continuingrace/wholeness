@@ -1,0 +1,771 @@
+import { useState, useEffect, useCallback, useRef } from "react";
+
+const FontLink = () => (
+  <style>{`
+    @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+    *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+    ::-webkit-scrollbar{width:0;}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:none;}}
+    @keyframes popIn{0%{transform:scale(.88);opacity:0;}70%{transform:scale(1.04);}100%{transform:scale(1);opacity:1;}}
+    @keyframes blessGlow{0%,100%{box-shadow:0 0 0 0 rgba(124,111,247,0);}50%{box-shadow:0 0 28px 6px rgba(124,111,247,.18);}}
+    .fadeUp{animation:fadeUp .32s cubic-bezier(.22,1,.36,1) both;}
+    .popIn{animation:popIn .4s cubic-bezier(.34,1.3,.64,1) both;}
+    .blessGlow{animation:blessGlow 2.4s ease-in-out infinite;}
+  `}</style>
+);
+
+/* ── Tokens ─────────────────────────────────────────────────────────── */
+const T = {
+  bg:"#F5F2EC", card:"#FFFFFF", surface:"#FAFAF7", border:"#E8E3DA",
+  ink:"#1A1A1A", sub:"#6B6B6B", muted:"#ABABAB",
+  soul:"#7C6FF7", body:"#3DAB80", mind:"#B06090",
+  soulBg:"#EFEEFF", bodyBg:"#E6F6EE", mindBg:"#F9EDF4",
+  soulDark:"#5A50D0", bodyDark:"#2D8A60", mindDark:"#8A4570",
+};
+
+/* ── Checklist ───────────────────────────────────────────────────────── */
+const CHECKLIST = {
+  soul:[
+    {id:"s1",label:"성경 읽기",icon:"📖"},
+    {id:"s2",label:"기도 (10분 이상)",icon:"🙏"},
+    {id:"s3",label:"묵상 / 큐티",icon:"✍️"},
+    {id:"s4",label:"찬양 듣기·부르기",icon:"🎵"},
+    {id:"s5",label:"신앙 서적 읽기",icon:"📚"},
+    {id:"s6",label:"예배 또는 공동체 교제",icon:"⛪"},
+    {id:"s7",label:"말씀 암송 또는 필사",icon:"🖊️"},
+  ],
+  body:[
+    {id:"b1",label:"8,000보 이상 걷기",icon:"🚶"},
+    {id:"b2",label:"달리기 / 유산소",icon:"🏃"},
+    {id:"b3",label:"스트레칭 / 근력 운동",icon:"💪"},
+    {id:"b4",label:"채소·단백질 한 끼 이상 챙기기",icon:"🥗"},
+    {id:"b5",label:"물 2L 이상 마시기",icon:"💧"},
+    {id:"b6",label:"충분한 수면 (7h+)",icon:"🌙"},
+    {id:"b7",label:"오후 2시 이후 카페인 끊기",icon:"☕"},
+  ],
+  mind:[
+    {id:"m1",label:"감사 일기 쓰기",icon:"✍️"},
+    {id:"m2",label:"멍 때리기 10분 (의도적 무자극)",icon:"☁️"},
+    {id:"m3",label:"독서 (30분 이상)",icon:"📗"},
+    {id:"m4",label:"그림·글씨·손작업 등 창작",icon:"🎨"},
+    {id:"m5",label:"나에게 따뜻한 말 한마디 쓰기",icon:"💌"},
+    {id:"m6",label:"좋아하는 음악 온전히 감상",icon:"🎧"},
+    {id:"m7",label:"자연 속 산책 또는 바깥 시간",icon:"🌳"},
+  ],
+};
+const CAT = {
+  soul:{label:"영적",  color:T.soul, bg:T.soulBg, dark:T.soulDark, emoji:"🙏"},
+  body:{label:"신체",  color:T.body, bg:T.bodyBg, dark:T.bodyDark, emoji:"🏃"},
+  mind:{label:"멘탈·예술", color:T.mind, bg:T.mindBg, dark:T.mindDark, emoji:"🎨"},
+};
+
+/* ── Storage ─────────────────────────────────────────────────────────── */
+const todayStr = () => new Date().toISOString().slice(0,10);
+const loadDay  = d => { try{ return JSON.parse(localStorage.getItem("whl_"+d)||"{}"); }catch{return{};} };
+const saveDay  = (d,v) => localStorage.setItem("whl_"+d, JSON.stringify(v));
+
+/* ── Flat person SVG (minimal pictogram style) ───────────────────────── */
+function PersonIcon({ soul, body, mind }) {
+  const all = soul && body && mind;
+  const any = soul || body || mind;
+  return (
+    <svg viewBox="0 0 80 100" width="72" height="90" style={{overflow:"visible", display:"block"}}>
+      <defs>
+        <filter id="pGlow" x="-30%" y="-30%" width="160%" height="160%">
+          <feGaussianBlur stdDeviation="2.5" result="blur"/>
+          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+      </defs>
+
+      {/* Head */}
+      <circle cx="40" cy="14" r="12"
+        fill={soul ? T.soul : "#D9D4CA"}
+        style={{transition:"fill .35s ease"}}
+        filter={soul ? "url(#pGlow)" : undefined}
+      />
+
+      {/* Torso */}
+      <rect x="22" y="30" width="36" height="28" rx="10"
+        fill={body ? T.body : "#D9D4CA"}
+        style={{transition:"fill .35s ease"}}
+        filter={body ? "url(#pGlow)" : undefined}
+      />
+
+      {/* Left arm */}
+      <rect x="2" y="32" width="18" height="9" rx="4.5"
+        fill={body ? T.body : "#D9D4CA"}
+        style={{transition:"fill .35s ease"}}
+      />
+      {/* Right arm */}
+      <rect x="60" y="32" width="18" height="9" rx="4.5"
+        fill={body ? T.body : "#D9D4CA"}
+        style={{transition:"fill .35s ease"}}
+      />
+
+      {/* Left leg */}
+      <rect x="24" y="60" width="13" height="30" rx="6.5"
+        fill={mind ? T.mind : "#D9D4CA"}
+        style={{transition:"fill .35s ease"}}
+        filter={mind ? "url(#pGlow)" : undefined}
+      />
+      {/* Right leg */}
+      <rect x="43" y="60" width="13" height="30" rx="6.5"
+        fill={mind ? T.mind : "#D9D4CA"}
+        style={{transition:"fill .35s ease"}}
+      />
+
+      {/* Face — appears when soul active */}
+      {soul && <>
+        <circle cx="35" cy="13" r="1.8" fill="white" opacity="0.9"/>
+        <circle cx="45" cy="13" r="1.8" fill="white" opacity="0.9"/>
+        <path d="M34 19 Q40 23 46 19" stroke="white" strokeWidth="1.4" fill="none" strokeLinecap="round"/>
+      </>}
+
+      {/* Sparkles when all done */}
+      {all && <>
+        <circle cx="40" cy="-4" r="2.5" fill={T.soul} opacity="0.9"/>
+        <circle cx="14" cy="4"  r="1.8" fill={T.mind}  opacity="0.8"/>
+        <circle cx="66" cy="4"  r="1.8" fill={T.body}  opacity="0.8"/>
+        <line x1="40" y1="-4" x2="37" y2="2" stroke={T.soul} strokeWidth="1" opacity="0.5"/>
+        <line x1="40" y1="-4" x2="43" y2="2" stroke={T.soul} strokeWidth="1" opacity="0.5"/>
+      </>}
+    </svg>
+  );
+}
+
+/* ── Category button (manual tap) ───────────────────────────────────── */
+function CatButton({ cat, meta, active, score, onToggle }) {
+  return (
+    <button onClick={onToggle} style={{
+      flex:1, aspectRatio:"1",
+      background: active ? meta.color : "#EDE8E0",
+      borderRadius:18,
+      border:"none", cursor:"pointer",
+      display:"flex", flexDirection:"column",
+      alignItems:"center", justifyContent:"center", gap:6,
+      transition:"all .28s cubic-bezier(.34,1.3,.64,1)",
+      transform: active ? "translateY(-3px)" : "none",
+      boxShadow: active ? `0 10px 28px ${meta.color}55` : "none",
+      position:"relative", overflow:"hidden",
+      fontFamily:"Pretendard,sans-serif",
+    }}>
+      {/* score badge */}
+      <div style={{
+        position:"absolute", top:8, right:8,
+        background: active ? "rgba(255,255,255,.25)" : "rgba(0,0,0,.1)",
+        borderRadius:20, padding:"1px 7px",
+        fontSize:10, fontWeight:700,
+        color: active ? "#fff" : T.muted,
+        fontFamily:"Pretendard,sans-serif",
+      }}>{score} / 7</div>
+
+      <span style={{fontSize:30}}>{meta.emoji}</span>
+      <span style={{
+        fontSize:12, fontWeight:700, letterSpacing:".03em",
+        color: active ? "#fff" : T.sub,
+        fontFamily:"Pretendard,sans-serif",
+      }}>{meta.label}</span>
+    </button>
+  );
+}
+
+/* ── Score arc ───────────────────────────────────────────────────────── */
+function Arc({ score, color, size=48 }) {
+  const r=(size-7)/2, c=size/2, circ=2*Math.PI*r, pct=score/7;
+  return (
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+      <circle cx={c} cy={c} r={r} fill="none" stroke={T.border} strokeWidth="4"/>
+      <circle cx={c} cy={c} r={r} fill="none" stroke={color} strokeWidth="4"
+        strokeDasharray={circ} strokeDashoffset={circ*(1-pct)}
+        strokeLinecap="round" transform={`rotate(-90 ${c} ${c})`}
+        style={{transition:"stroke-dashoffset .55s ease"}}/>
+      <text x={c} y={c+1} textAnchor="middle" dominantBaseline="middle"
+        fill={pct>0?color:T.muted} fontSize="12" fontWeight="700"
+        fontFamily="Pretendard,sans-serif">{score}</text>
+    </svg>
+  );
+}
+
+/* ── Check item ──────────────────────────────────────────────────────── */
+function CheckItem({ item, checked, color, bg, onToggle, readonly }) {
+  return (
+    <button onClick={readonly ? undefined : onToggle} style={{
+      display:"flex", alignItems:"center", gap:11,
+      width:"100%", padding:"10px 12px",
+      background: checked ? bg : "transparent",
+      border:`1px solid ${checked ? color+"50" : T.border}`,
+      borderRadius:11, cursor: readonly?"default":"pointer",
+      transition:"all .18s", fontFamily:"Pretendard,sans-serif",
+    }}>
+      <div style={{
+        width:19, height:19, borderRadius:5, flexShrink:0,
+        background: checked ? color : "transparent",
+        border:`1.8px solid ${checked ? color : T.muted}`,
+        display:"flex", alignItems:"center", justifyContent:"center",
+        transition:"all .18s",
+        boxShadow: checked ? `0 0 8px ${color}44` : "none",
+      }}>
+        {checked && <svg width="9" height="7" viewBox="0 0 9 7">
+          <path d="M1 3.5L3.2 5.8L8 1" stroke="white" strokeWidth="1.7" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>}
+      </div>
+      <span style={{fontSize:11, color:T.muted, flexShrink:0}}>{item.icon}</span>
+      <span style={{fontSize:13, color:checked?T.ink:T.sub, fontWeight:checked?600:400, textAlign:"left", transition:"color .18s", fontFamily:"Pretendard,sans-serif"}}>{item.label}</span>
+    </button>
+  );
+}
+
+/* ── Mini calendar ───────────────────────────────────────────────────── */
+function MiniCalendar({ selected, onSelect }) {
+  const [vy,setVy] = useState(new Date().getFullYear());
+  const [vm,setVm] = useState(new Date().getMonth());
+  const first = new Date(vy,vm,1).getDay();
+  const days  = new Date(vy,vm+1,0).getDate();
+  const today = todayStr();
+
+  const getInfo = d => {
+    const ds = `${vy}-${String(vm+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+    const data = loadDay(ds);
+    const allItems = [...CHECKLIST.soul,...CHECKLIST.body,...CHECKLIST.mind];
+    const done = allItems.filter(i=>data[i.id]).length;
+    const catDone = ["soul","body","mind"].filter(c=>CHECKLIST[c].some(i=>data[i.id])).length;
+    return { ds, done, catDone };
+  };
+
+  return (
+    <div style={{background:T.card, borderRadius:20, padding:"16px 14px", border:`1px solid ${T.border}`, boxShadow:"0 2px 12px rgba(0,0,0,.06)"}}>
+      <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12}}>
+        <button onClick={()=>{let m=vm-1,y=vy;if(m<0){m=11;y--;}setVm(m);setVy(y);}}
+          style={{background:"none",border:"none",color:T.sub,cursor:"pointer",fontSize:17,padding:"2px 10px"}}>‹</button>
+        <span style={{fontSize:13, fontWeight:700, color:T.ink, fontFamily:"Pretendard,sans-serif"}}>
+          {new Date(vy,vm).toLocaleDateString("ko-KR",{year:"numeric",month:"long"})}
+        </span>
+        <button onClick={()=>{let m=vm+1,y=vy;if(m>11){m=0;y++;}setVm(m);setVy(y);}}
+          style={{background:"none",border:"none",color:T.sub,cursor:"pointer",fontSize:17,padding:"2px 10px"}}>›</button>
+      </div>
+      <div style={{display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:1, marginBottom:4}}>
+        {["일","월","화","수","목","금","토"].map(d=>(
+          <div key={d} style={{textAlign:"center",fontSize:9,color:T.muted,padding:"2px 0",fontFamily:"Pretendard,sans-serif"}}>{d}</div>
+        ))}
+      </div>
+      <div style={{display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:1}}>
+        {Array.from({length:first}).map((_,i)=><div key={`e${i}`}/>)}
+        {Array.from({length:days},(_,i)=>i+1).map(d=>{
+          const {ds,done,catDone} = getInfo(d);
+          const isSel=ds===selected, isT=ds===today;
+          return (
+            <button key={d} onClick={()=>onSelect(ds)} style={{
+              aspectRatio:"1", display:"flex", flexDirection:"column",
+              alignItems:"center", justifyContent:"center", gap:2,
+              borderRadius:8, border:"none", cursor:"pointer",
+              background: isSel?T.soul : isT?`${T.soul}15`:"transparent",
+              outline: isT&&!isSel?`1.5px solid ${T.soul}50`:"none",
+              fontFamily:"Pretendard,sans-serif",
+            }}>
+              <span style={{fontSize:11, fontWeight:isSel||isT?700:400, color:isSel?"#fff":isT?T.soul:T.sub}}>{d}</span>
+              {done>0&&!isSel&&(
+                <div style={{display:"flex",gap:1.5}}>
+                  {catDone>=1&&<div style={{width:3,height:3,borderRadius:"50%",background:T.soul}}/>}
+                  {catDone>=2&&<div style={{width:3,height:3,borderRadius:"50%",background:T.body}}/>}
+                  {catDone>=3&&<div style={{width:3,height:3,borderRadius:"50%",background:T.mind}}/>}
+                </div>
+              )}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/* ── Share card (rendered to DOM for capture) ────────────────────────── */
+function ShareCardEl({ dateStr, checks, soulOn, bodyOn, mindOn, ss, bs, ms }) {
+  const date = new Date(dateStr+"T12:00:00").toLocaleDateString("ko-KR",{month:"long",day:"numeric",weekday:"short"});
+  const total = ss+bs+ms;
+  const allOn = soulOn&&bodyOn&&mindOn;
+  return (
+    <div style={{
+      width:360, padding:"28px 24px",
+      background:"linear-gradient(150deg,#1C1624 0%,#122018 55%,#1C1624 100%)",
+      borderRadius:28, color:"#fff", fontFamily:"Pretendard,sans-serif",
+      position:"relative", overflow:"hidden",
+    }}>
+      {/* bg texture dots */}
+      <div style={{position:"absolute",top:16,right:20,opacity:.07}}>
+        {[0,1,2,3,4].map(r=>(
+          <div key={r} style={{display:"flex",gap:8,marginBottom:8}}>
+            {[0,1,2,3,4].map(c=><div key={c} style={{width:3,height:3,borderRadius:"50%",background:"#fff"}}/>)}
+          </div>
+        ))}
+      </div>
+
+      <div style={{fontSize:9,letterSpacing:".2em",color:"rgba(255,255,255,.4)",marginBottom:4}}>WHOLENESS · 영육강건</div>
+      <div style={{fontSize:21,fontWeight:800,letterSpacing:"-.02em",marginBottom:2}}>{date}</div>
+      {allOn
+        ? <div style={{fontSize:12,color:"rgba(255,255,255,.5)",marginBottom:20,fontStyle:"italic"}}>오늘 하루 하나님 은혜 안에서 온전합니다 ✦</div>
+        : <div style={{fontSize:12,color:"rgba(255,255,255,.4)",marginBottom:20}}>{total}/21점 · 오늘도 한 걸음씩</div>
+      }
+
+      {/* 3 category scores */}
+      <div style={{display:"flex",gap:8,marginBottom:18}}>
+        {[["soul","영혼",T.soul,soulOn,ss],["body","몸",T.body,bodyOn,bs],["mind","마음",T.mind,mindOn,ms]].map(([cat,lbl,col,on,s])=>(
+          <div key={cat} style={{
+            flex:1, background:on?"rgba(255,255,255,.12)":"rgba(255,255,255,.05)",
+            borderRadius:14, padding:"12px 8px", textAlign:"center",
+            border:`1px solid ${on?col+"50":"rgba(255,255,255,.08)"}`,
+          }}>
+            <div style={{fontSize:22,fontWeight:900,color:on?col:"rgba(255,255,255,.3)",lineHeight:1}}>{s}</div>
+            <div style={{fontSize:9,color:"rgba(255,255,255,.45)",marginTop:3}}>{lbl} / 7</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Done items */}
+      <div style={{display:"flex",flexWrap:"wrap",gap:4,marginBottom:16}}>
+        {[...CHECKLIST.soul,...CHECKLIST.body,...CHECKLIST.mind].filter(i=>checks[i.id]).map(i=>(
+          <span key={i.id} style={{fontSize:9,padding:"3px 8px",background:"rgba(255,255,255,.09)",borderRadius:20,color:"rgba(255,255,255,.55)"}}>{i.icon} {i.label}</span>
+        ))}
+      </div>
+
+      <div style={{fontSize:9,color:"rgba(255,255,255,.2)",textAlign:"right"}}>#영육강건 #wholeness #온전한하루 #하루결</div>
+    </div>
+  );
+}
+
+/* ── Dopamine missions ───────────────────────────────────────────────── */
+const MISSIONS=[
+  {text:"알림 10분 끄고 창밖 바라보기",sci:"주의 회복 이론(ART): 자연 자극이 directed attention을 회복시킵니다",reward:"🌿 잠깐의 고요함이 하루를 바꿨어요."},
+  {text:"물 한 잔, 천천히 맛에 집중하며 마시기",sci:"마음챙김: 감각 집중 시 디폴트 모드 네트워크가 조용해집니다",reward:"💧 완전한 현존의 순간이었어요."},
+  {text:"감사한 것 3가지 손으로 써보기",sci:"긍정심리학: 감사 기록은 도파민·세로토닌 경로를 동시에 활성화합니다",reward:"✍️ 당신의 뇌가 좋음에 주목하기 시작했어요."},
+  {text:"5분 맨발 걷기 또는 스트레칭",sci:"접지(Grounding): 감각 입력이 자율신경계를 부교감으로 전환합니다",reward:"🌱 몸이 고마워하고 있어요."},
+  {text:"찬양 1곡을 눈 감고 온전히 듣기",sci:"음악과 도파민: 기대와 해소 패턴이 쾌감 회로를 건강하게 자극합니다",reward:"🎵 그 멜로디가 당신 안에 남았습니다."},
+  {text:"20분 SNS 없이 산책하기",sci:"디지털 단식: 자극 역치가 정상화되어 일상에서 기쁨을 느끼게 됩니다",reward:"🚶 오늘 당신의 뇌는 조금 더 자유롭습니다."},
+  {text:"성경 한 구절 소리 내어 읽고 묵상",sci:"의미 기반 보상: 초월적 연결감이 내측전전두피질을 활성화합니다",reward:"📖 말씀이 당신 안에 심겼습니다."},
+];
+
+/* ═══════════════════════════════════════════════════════════════════════ */
+export default function App() {
+  const [tab, setTab]         = useState("today");
+  const [selDate, setSelDate] = useState(todayStr());
+  const [showCal, setShowCal] = useState(false);
+  const [checks, setChecks]   = useState({});
+  const [showShare, setShowShare] = useState(false);
+  const [saving, setSaving]   = useState(false);
+  const [saveMsg, setSaveMsg] = useState("");
+
+  // Manual category toggles (independent of checklist)
+  const [soulOn, setSoulOn] = useState(false);
+  const [bodyOn, setBodyOn] = useState(false);
+  const [mindOn, setMindOn] = useState(false);
+
+  const [missionDone, setMissionDone] = useState(false);
+  const [showReward, setShowReward]   = useState(false);
+
+  const [ingredients, setIngredients] = useState("");
+  const [mealPlan, setMealPlan]       = useState(null);
+  const [loadingMeal, setLoadingMeal] = useState(false);
+  const [mealError, setMealError]     = useState("");
+
+  const shareRef = useRef(null);
+  const isToday  = selDate === todayStr();
+  const readonly = !isToday;
+  const mission  = MISSIONS[new Date().getDay()];
+
+  useEffect(() => {
+    const data = loadDay(selDate);
+    setChecks(data);
+    setSoulOn(!!data.__soulOn);
+    setBodyOn(!!data.__bodyOn);
+    setMindOn(!!data.__mindOn);
+    setShowShare(false);
+  }, [selDate]);
+
+  useEffect(() => {
+    saveDay(selDate, { ...checks, __soulOn:soulOn, __bodyOn:bodyOn, __mindOn:mindOn });
+  }, [checks, soulOn, bodyOn, mindOn, selDate]);
+
+  const toggle = useCallback(id => {
+    if (readonly) return;
+    setChecks(p => ({ ...p, [id]: !p[id] }));
+  }, [readonly]);
+
+  const score = cat => CHECKLIST[cat].filter(i => checks[i.id]).length;
+  const ss = score("soul"), bs = score("body"), ms = score("mind");
+  const allOn = soulOn && bodyOn && mindOn;
+
+  // Share card save as image
+  const saveImage = async () => {
+    if (!shareRef.current) return;
+    setSaving(true);
+    try {
+      const html2canvas = (await import("https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.esm.js")).default;
+      const canvas = await html2canvas(shareRef.current, {
+        scale: 3, useCORS: true, backgroundColor: null,
+        logging: false,
+      });
+      const url = canvas.toDataURL("image/png");
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `wholeness_${selDate}.png`;
+      a.click();
+      setSaveMsg("✓ 이미지 저장 완료! 갤러리에서 확인하세요.");
+      setTimeout(()=>setSaveMsg(""), 3500);
+    } catch(e) {
+      // fallback: open in new tab
+      setSaveMsg("브라우저에서 이미지를 길게 눌러 저장하세요.");
+      setTimeout(()=>setSaveMsg(""), 4000);
+    }
+    setSaving(false);
+  };
+
+  const dateLabel = isToday ? "오늘" : new Date(selDate+"T12:00:00").toLocaleDateString("ko-KR",{month:"long",day:"numeric",weekday:"short"});
+
+  const generateMeals = async () => {
+    if (!ingredients.trim()) { setMealError("냉장고 재료를 입력해주세요."); return; }
+    setLoadingMeal(true); setMealError(""); setMealPlan(null);
+    try {
+      const res = await fetch("https://api.anthropic.com/v1/messages",{
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({
+          model:"claude-sonnet-4-20250514", max_tokens:1200,
+          system:`건강한 한식 도시락 전문가. JSON만 반환. 형식: {"plan":[{"day":"월","menu":"메뉴","ingredients":["재료1","재료2"],"tip":"팁","kcal":"약 N kcal"},...]} 7개 요일 전부.`,
+          messages:[{role:"user",content:`냉장고: ${ingredients}\n\n일주일 건강 도시락 플랜`}],
+        }),
+      });
+      const data = await res.json();
+      const text = data.content.map(i=>i.text||"").join("");
+      setMealPlan(JSON.parse(text.replace(/```json|```/g,"").trim()).plan);
+    } catch { setMealError("생성 실패. 다시 시도해주세요."); }
+    setLoadingMeal(false);
+  };
+
+  /* ── Render ─────────────────────────────────────────────────────── */
+  return (
+    <>
+      <FontLink/>
+      <div style={{fontFamily:"Pretendard,-apple-system,sans-serif", background:T.bg, minHeight:"100vh", maxWidth:430, margin:"0 auto", color:T.ink, paddingBottom:88}}>
+
+        {/* ── Header ── */}
+        <div style={{padding:"32px 20px 0"}}>
+          <div style={{fontSize:10,letterSpacing:".18em",color:T.muted,marginBottom:4}}>WHOLENESS · 영육강건</div>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-end"}}>
+            <h1 style={{fontSize:28,fontWeight:800,letterSpacing:"-.03em",lineHeight:1.1}}>온전한 하루</h1>
+            <button onClick={()=>setShowCal(s=>!s)} style={{
+              background: showCal?`${T.soul}15`:T.card,
+              border:`1px solid ${showCal?T.soul+"70":T.border}`,
+              borderRadius:10, padding:"7px 12px", cursor:"pointer",
+              color: showCal?T.soul:T.sub,
+              fontSize:12, fontWeight:600,
+              display:"flex", alignItems:"center", gap:6,
+              boxShadow:"0 1px 4px rgba(0,0,0,.06)", transition:"all .2s",
+            }}>
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                <rect x="1" y="2" width="10" height="9" rx="2" stroke="currentColor" strokeWidth="1.2"/>
+                <path d="M4 1v2M8 1v2" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+                <path d="M1 5h10" stroke="currentColor" strokeWidth="1.2"/>
+              </svg>
+              {dateLabel}
+            </button>
+          </div>
+          {readonly && <div style={{marginTop:7,fontSize:11,color:T.mind,fontWeight:600}}>📅 과거 기록 보기 — 수정 불가</div>}
+        </div>
+
+        {/* Calendar */}
+        {showCal && (
+          <div style={{padding:"14px 20px 0"}}>
+            <MiniCalendar selected={selDate} onSelect={d=>{setSelDate(d);setShowCal(false);}}/>
+          </div>
+        )}
+
+        {/* ── Tab bar ── */}
+        <div style={{display:"flex",gap:2,margin:"18px 20px 0",background:"#EDE8DE",borderRadius:14,padding:4}}>
+          {[["today","기록"],["dopamine","도파민 리셋"],["meal","식단 플래너"]].map(([k,l])=>(
+            <button key={k} onClick={()=>setTab(k)} style={{
+              flex:1, padding:"9px 4px", borderRadius:11, border:"none", cursor:"pointer",
+              background:tab===k?T.card:"transparent",
+              color:tab===k?T.ink:T.muted,
+              fontWeight:tab===k?700:400, fontSize:12,
+              boxShadow:tab===k?"0 1px 6px rgba(0,0,0,.08)":"none",
+              transition:"all .2s",
+            }}>{l}</button>
+          ))}
+        </div>
+
+        {/* ════ TAB: TODAY ════ */}
+        {tab==="today" && (
+          <div style={{padding:"16px 20px 0",display:"flex",flexDirection:"column",gap:14}}>
+
+            {/* Hero card: person + 3 manual buttons */}
+            <div style={{
+              background:T.card, borderRadius:24, padding:"24px 18px 20px",
+              border:`1px solid ${allOn?T.soul+"60":T.border}`,
+              boxShadow: allOn?"0 0 0 2px rgba(124,111,247,.15), 0 4px 24px rgba(0,0,0,.07)":"0 2px 16px rgba(0,0,0,.05)",
+              transition:"border-color .4s, box-shadow .4s",
+            }}>
+              {/* Person icon + score summary */}
+              <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:20,marginBottom:18}}>
+                <PersonIcon soul={soulOn} body={bodyOn} mind={mindOn}/>
+                <div>
+                  <div style={{fontSize:38,fontWeight:900,letterSpacing:"-.04em",lineHeight:1,color:T.ink}}>
+                    {ss+bs+ms}<span style={{fontSize:14,color:T.muted,fontWeight:400,marginLeft:3}}> / 21</span>
+                  </div>
+                  <div style={{fontSize:11,color:T.muted,marginBottom:10}}>체크리스트 점수</div>
+                  <div style={{display:"flex",gap:8}}>
+                    {[["soul",ss],["body",bs],["mind",ms]].map(([cat,s])=>(
+                      <div key={cat} style={{textAlign:"center"}}>
+                        <Arc score={s} color={CAT[cat].color} size={44}/>
+                        <div style={{fontSize:9,color:T.muted,marginTop:2}}>{CAT[cat].label}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Blessing message */}
+              {allOn && (
+                <div className="popIn blessGlow" style={{
+                  textAlign:"center", marginBottom:16,
+                  padding:"10px 14px",
+                  background:"linear-gradient(135deg,#EFEEFF,#E6F6EE)",
+                  borderRadius:14, border:`1px solid ${T.soul}30`,
+                }}>
+                  <div style={{fontSize:14,fontWeight:700,color:T.soul,lineHeight:1.5}}>
+                    🎉 오늘 하루 온전합니다!
+                  </div>
+                </div>
+              )}
+
+              {/* 3 manual category buttons */}
+              <div style={{display:"flex",gap:10}}>
+                <CatButton cat="soul" meta={CAT.soul} active={soulOn} score={ss} onToggle={readonly?undefined:()=>setSoulOn(s=>!s)}/>
+                <CatButton cat="body" meta={CAT.body} active={bodyOn} score={bs} onToggle={readonly?undefined:()=>setBodyOn(s=>!s)}/>
+                <CatButton cat="mind" meta={CAT.mind} active={mindOn} score={ms} onToggle={readonly?undefined:()=>setMindOn(s=>!s)}/>
+              </div>
+              {!readonly && <div style={{textAlign:"center",marginTop:10,fontSize:10,color:T.muted}}>탭해서 오늘의 카테고리를 활성화하세요</div>}
+            </div>
+
+            {/* Category checklists */}
+            {Object.entries(CAT).map(([cat,meta])=>{
+              const s = cat==="soul"?ss:cat==="body"?bs:ms;
+              return (
+                <div key={cat} style={{background:T.card,borderRadius:20,overflow:"hidden",border:`1px solid ${T.border}`,boxShadow:"0 1px 8px rgba(0,0,0,.04)"}}>
+                  <div style={{
+                    display:"flex",alignItems:"center",justifyContent:"space-between",
+                    padding:"13px 16px 11px",
+                    borderBottom:`1px solid ${T.border}`,
+                    background:`linear-gradient(90deg,${meta.bg} 0%,transparent 80%)`,
+                  }}>
+                    <div style={{display:"flex",alignItems:"center",gap:8}}>
+                      <div style={{width:7,height:7,borderRadius:"50%",background:meta.color}}/>
+                      <span style={{fontSize:13,fontWeight:800,color:meta.color,letterSpacing:".04em"}}>{meta.label}</span>
+                    </div>
+                    <span style={{fontSize:12,fontWeight:700,color:meta.color}}>{s} &thinsp;/&thinsp; 7</span>
+                  </div>
+                  <div style={{padding:"10px 12px",display:"flex",flexDirection:"column",gap:5}}>
+                    {CHECKLIST[cat].map(item=>(
+                      <CheckItem key={item.id} item={item} checked={!!checks[item.id]}
+                        color={meta.color} bg={meta.bg}
+                        onToggle={()=>toggle(item.id)} readonly={readonly}/>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+
+            {/* Share section */}
+            {isToday && (
+              <>
+                <button onClick={()=>setShowShare(s=>!s)} style={{
+                  background: allOn
+                    ? `linear-gradient(135deg,${T.soul},${T.body})`
+                    : soulOn||bodyOn||mindOn ? T.soul : T.card,
+                  border:`1px solid ${soulOn||bodyOn||mindOn?T.soul:T.border}`,
+                  borderRadius:16, padding:"14px",
+                  fontSize:13, fontWeight:700, cursor:"pointer",
+                  color: soulOn||bodyOn||mindOn?"#fff":T.muted,
+                  display:"flex",alignItems:"center",justifyContent:"center",gap:8,
+                  boxShadow:allOn?`0 6px 24px ${T.soul}44`:soulOn||bodyOn||mindOn?`0 3px 12px ${T.soul}30`:"none",
+                  transition:"all .3s ease",
+                }}>
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                    <circle cx="11" cy="2.5" r="1.5" stroke="currentColor" strokeWidth="1.2"/>
+                    <circle cx="11" cy="11.5" r="1.5" stroke="currentColor" strokeWidth="1.2"/>
+                    <circle cx="3" cy="7" r="1.5" stroke="currentColor" strokeWidth="1.2"/>
+                    <path d="M4.3 6.2L9.7 3.3M4.3 7.8L9.7 10.7" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+                  </svg>
+                  {showShare ? "카드 닫기" : "인스타 공유 카드"}
+                  {!(soulOn||bodyOn||mindOn) && <span style={{fontSize:10,opacity:.6}}>· 카테고리 활성화 후 이용</span>}
+                </button>
+
+                {showShare && (
+                  <div>
+                    {/* Rendered share card */}
+                    <div ref={shareRef} style={{borderRadius:28,overflow:"hidden",marginBottom:10}}>
+                      <ShareCardEl dateStr={selDate} checks={checks}
+                        soulOn={soulOn} bodyOn={bodyOn} mindOn={mindOn}
+                        ss={ss} bs={bs} ms={ms}/>
+                    </div>
+                    {/* Save button */}
+                    <button onClick={saveImage} disabled={saving} style={{
+                      width:"100%", padding:"13px",
+                      background:saving?T.muted:"#1A1A1A",
+                      color:"#fff", border:"none", borderRadius:14,
+                      fontSize:13, fontWeight:700, cursor:saving?"not-allowed":"pointer",
+                      display:"flex",alignItems:"center",justifyContent:"center",gap:8,
+                      boxShadow:"0 4px 14px rgba(0,0,0,.18)",
+                      transition:"all .2s",
+                    }}>
+                      <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                        <path d="M7 1v8M4 6l3 3 3-3" stroke="white" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
+                        <path d="M1 10v1a2 2 0 002 2h8a2 2 0 002-2v-1" stroke="white" strokeWidth="1.4" strokeLinecap="round"/>
+                      </svg>
+                      {saving ? "저장 중..." : "이미지 저장 (사진첩)"}
+                    </button>
+                    {saveMsg && (
+                      <div style={{textAlign:"center",fontSize:12,color:T.body,marginTop:8,fontWeight:600}}>{saveMsg}</div>
+                    )}
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        )}
+
+        {/* ════ TAB: DOPAMINE ════ */}
+        {tab==="dopamine" && (
+          <div style={{padding:"16px 20px 0",display:"flex",flexDirection:"column",gap:14}}>
+            <div style={{background:T.card,borderRadius:20,padding:"20px 18px",border:`1px solid ${T.border}`,boxShadow:"0 1px 8px rgba(0,0,0,.04)"}}>
+              <div style={{fontSize:9,letterSpacing:".16em",color:T.muted,marginBottom:8}}>🧠 뇌과학 인사이트</div>
+              <div style={{fontSize:14,fontWeight:700,lineHeight:1.65,color:T.ink,marginBottom:10}}>도파민 과잉은 역치를 높여 평범한 것들을 무감각하게 만듭니다.</div>
+              <div style={{fontSize:11,color:T.sub,lineHeight:1.8}}>숏폼·소셜 미디어는 예측 오류 기반 도파민을 과자극합니다. <span style={{color:T.soul,fontWeight:600}}>슬로우 도파민</span> — 운동, 독서, 기도, 자연 — 이 진짜 회복의 원천입니다.</div>
+            </div>
+
+            <div style={{background:T.card,borderRadius:20,overflow:"hidden",border:`1px solid ${T.border}`,boxShadow:"0 1px 8px rgba(0,0,0,.04)"}}>
+              <div style={{padding:"16px 18px 14px",background:`linear-gradient(90deg,${T.soulBg},transparent)`,borderBottom:`1px solid ${T.border}`}}>
+                <div style={{fontSize:9,letterSpacing:".16em",color:T.muted,marginBottom:6}}>오늘의 리셋 미션</div>
+                <div style={{fontSize:15,fontWeight:700,lineHeight:1.55,color:T.ink}}>{mission.text}</div>
+              </div>
+              <div style={{padding:"14px 18px 16px"}}>
+                <div style={{background:T.soulBg,borderRadius:12,padding:"10px 14px",marginBottom:14,border:`1px solid ${T.soul}20`}}>
+                  <div style={{fontSize:9,color:T.soul,fontWeight:700,marginBottom:4,letterSpacing:".1em"}}>왜 효과적인가</div>
+                  <div style={{fontSize:11,color:T.sub,lineHeight:1.7}}>{mission.sci}</div>
+                </div>
+                {!missionDone
+                  ? <button onClick={()=>{setMissionDone(true);setShowReward(true);setTimeout(()=>setShowReward(false),5000);}} style={{
+                      width:"100%",padding:"13px",background:T.soul,color:"#fff",
+                      border:"none",borderRadius:12,fontSize:13,fontWeight:700,cursor:"pointer",
+                      boxShadow:`0 4px 14px ${T.soul}44`,
+                    }}>미션 완료 ✓</button>
+                  : <div style={{textAlign:"center",padding:"13px",background:T.soulBg,borderRadius:12,color:T.soul,fontWeight:700,fontSize:13}}>✓ 오늘 미션 완료</div>
+                }
+              </div>
+            </div>
+
+            {showReward && (
+              <div style={{
+                background:"linear-gradient(145deg,#1C1624,#122018)",
+                borderRadius:20,padding:"22px 18px",textAlign:"center",
+                border:`1px solid ${T.soul}40`,boxShadow:`0 8px 28px ${T.soul}22`,
+              }}>
+                <div style={{fontSize:34,marginBottom:10}}>🌟</div>
+                <div style={{fontSize:14,fontWeight:700,lineHeight:1.7,color:"#fff"}}>{mission.reward}</div>
+              </div>
+            )}
+
+            <div style={{background:T.card,borderRadius:20,padding:"18px 16px",border:`1px solid ${T.border}`,boxShadow:"0 1px 8px rgba(0,0,0,.04)"}}>
+              <div style={{fontSize:11,fontWeight:700,color:T.sub,marginBottom:12,letterSpacing:".06em"}}>이번 주 미션</div>
+              {MISSIONS.map((m,i)=>(
+                <div key={i} style={{display:"flex",gap:12,alignItems:"flex-start",padding:"9px 0",borderBottom:i<MISSIONS.length-1?`1px solid ${T.border}`:"none"}}>
+                  <div style={{fontSize:10,fontWeight:700,minWidth:18,paddingTop:2,color:i===new Date().getDay()?T.soul:T.muted}}>{["일","월","화","수","목","금","토"][i]}</div>
+                  <div style={{fontSize:12,color:i===new Date().getDay()?T.ink:T.sub,lineHeight:1.55,fontWeight:i===new Date().getDay()?600:400}}>{m.text}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ════ TAB: MEAL ════ */}
+        {tab==="meal" && (
+          <div style={{padding:"16px 20px 0",display:"flex",flexDirection:"column",gap:14}}>
+            <div style={{background:T.card,borderRadius:20,padding:"20px 18px",border:`1px solid ${T.border}`,boxShadow:"0 1px 8px rgba(0,0,0,.04)"}}>
+              <div style={{fontSize:13,fontWeight:700,color:T.ink,marginBottom:4}}>냉장고 재료 입력</div>
+              <div style={{fontSize:11,color:T.muted,marginBottom:12}}>콤마 또는 줄바꿈으로 구분해 입력하세요</div>
+              <textarea value={ingredients} onChange={e=>setIngredients(e.target.value)} rows={4}
+                placeholder="예: 닭가슴살, 달걀 4개, 브로콜리, 현미밥, 두부..."
+                style={{width:"100%",padding:"12px 14px",borderRadius:12,border:`1px solid ${T.border}`,background:T.surface,color:T.ink,fontFamily:"Pretendard,sans-serif",fontSize:13,outline:"none",resize:"vertical",lineHeight:1.6}}/>
+              <button onClick={generateMeals} disabled={loadingMeal} style={{
+                width:"100%",marginTop:12,padding:"13px",
+                background:loadingMeal?T.muted:T.body,color:"#fff",
+                border:"none",borderRadius:12,fontSize:13,fontWeight:700,
+                cursor:loadingMeal?"not-allowed":"pointer",
+                boxShadow:loadingMeal?"none":`0 4px 14px ${T.body}44`,transition:"all .2s",
+              }}>{loadingMeal?"🥗 생성 중...":"✨ AI 일주일 도시락 플랜 생성"}</button>
+              {mealError&&<div style={{color:"#D05050",fontSize:11,marginTop:8,textAlign:"center"}}>{mealError}</div>}
+            </div>
+
+            {mealPlan && (
+              <div style={{background:T.card,borderRadius:20,padding:"18px 16px",border:`1px solid ${T.border}`,boxShadow:"0 1px 8px rgba(0,0,0,.04)"}}>
+                <div style={{fontSize:12,fontWeight:700,color:T.ink,marginBottom:14}}>📅 이번 주 도시락 플랜</div>
+                {mealPlan.map((day,i)=>(
+                  <div key={i} style={{marginBottom:10,padding:"13px",background:T.surface,borderRadius:14,border:`1px solid ${T.border}`}}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+                      <div style={{display:"flex",alignItems:"center",gap:8}}>
+                        <div style={{width:24,height:24,borderRadius:7,background:T.body,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:800,color:"#fff",flexShrink:0}}>{day.day}</div>
+                        <span style={{fontSize:13,fontWeight:700,color:T.ink}}>{day.menu}</span>
+                      </div>
+                      {day.kcal&&<span style={{fontSize:10,color:T.muted}}>{day.kcal}</span>}
+                    </div>
+                    <div style={{display:"flex",flexWrap:"wrap",gap:4,marginBottom:day.tip?7:0}}>
+                      {(day.ingredients||[]).map((ing,j)=>(
+                        <span key={j} style={{fontSize:10,padding:"2px 8px",background:T.bodyBg,color:T.body,borderRadius:20,fontWeight:500}}>{ing}</span>
+                      ))}
+                    </div>
+                    {day.tip&&<div style={{fontSize:11,color:T.muted,fontStyle:"italic"}}>💡 {day.tip}</div>}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div style={{background:T.bodyBg,borderRadius:16,padding:"14px 16px",border:`1px solid ${T.body}20`}}>
+              <div style={{fontSize:11,fontWeight:700,color:T.body,marginBottom:8}}>건강 도시락 원칙</div>
+              {["단백질 + 복합탄수화물 + 채소의 황금 비율","전날 밤 준비 = 아침 여유","색깔이 다양할수록 영양이 균형 잡힙니다"].map((t,i)=>(
+                <div key={i} style={{fontSize:11,color:T.sub,marginBottom:3}}>· {t}</div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── Bottom nav ── */}
+        <div style={{
+          position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",
+          width:"100%",maxWidth:430,
+          background:"rgba(245,242,236,.92)",backdropFilter:"blur(16px)",
+          borderTop:`1px solid ${T.border}`,
+          display:"flex",padding:"10px 0 16px",
+        }}>
+          {[
+            ["today","기록",
+              <svg key="t" width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="7" r="4" stroke="currentColor" strokeWidth="1.4"/><path d="M3 17c0-3.314 2.686-6 6-6s6 2.686 6 6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg>
+            ],
+            ["dopamine","리셋",
+              <svg key="d" width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M9 2C5.686 2 3 4.686 3 8c0 2.21 1.13 4.16 2.84 5.31L5.5 15h7l-.34-1.69A6 6 0 0 0 15 8c0-3.314-2.686-6-6-6Z" stroke="currentColor" strokeWidth="1.4"/><path d="M7 15.5h4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg>
+            ],
+            ["meal","식단",
+              <svg key="m" width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M6 2v5c0 1.657 1.343 3 3 3s3-1.343 3-3V2" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/><path d="M9 10v6M6 16h6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg>
+            ],
+          ].map(([k,l,icon])=>(
+            <button key={k} onClick={()=>setTab(k)} style={{
+              flex:1, background:"none", border:"none", cursor:"pointer",
+              display:"flex", flexDirection:"column", alignItems:"center", gap:3,
+              color: tab===k?T.soul:T.muted, transition:"color .2s",
+            }}>
+              {icon}
+              <span style={{fontSize:10,fontWeight:tab===k?700:400}}>{l}</span>
+              {tab===k&&<div style={{width:14,height:2,borderRadius:1,background:T.soul}}/>}
+            </button>
+          ))}
+        </div>
+      </div>
+    </>
+  );
+}
