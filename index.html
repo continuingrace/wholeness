@@ -530,20 +530,40 @@ function App() {
 
   const generateMeals = async () => {
     if(!ingredients.trim()){setMealError("냉장고 재료를 입력해주세요.");return;}
+    const apiKey = localStorage.getItem("whl_apikey")||"";
+    if(!apiKey){
+      setMealError("⚙️ 백업·복구 탭 하단에서 API 키를 먼저 저장해주세요.");
+      return;
+    }
     setLoadingMeal(true); setMealError(""); setMealPlan(null);
     try {
-      const res=await fetch("https://api.anthropic.com/v1/messages",{
-        method:"POST",headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({
-          model:"claude-sonnet-4-20250514",max_tokens:1200,
-          system:`건강한 한식 도시락 전문가. JSON만 반환. 형식: {"plan":[{"day":"월","menu":"메뉴","ingredients":["재료1","재료2"],"tip":"팁","kcal":"약 N kcal"},...]} 7개 요일 전부.`,
-          messages:[{role:"user",content:`냉장고: ${ingredients}\n\n일주일 건강 도시락 플랜`}],
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": apiKey,
+          "anthropic-version": "2023-06-01",
+          "anthropic-dangerous-direct-browser-access": "true",
+        },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-20250514",
+          max_tokens: 1200,
+          system: `건강한 한식 도시락 전문가. JSON만 반환. 형식: {"plan":[{"day":"월","menu":"메뉴","ingredients":["재료1","재료2"],"tip":"팁","kcal":"약 N kcal"},...]} 7개 요일 전부.`,
+          messages: [{role:"user", content:`냉장고: ${ingredients}
+
+일주일 건강 도시락 플랜`}],
         }),
       });
-      const data=await res.json();
-      const text=data.content.map(i=>i.text||"").join("");
+      if(!res.ok){
+        const err = await res.json().catch(()=>({}));
+        throw new Error(err?.error?.message || `HTTP ${res.status}`);
+      }
+      const data = await res.json();
+      const text = data.content.map(i=>i.text||"").join("");
       setMealPlan(JSON.parse(text.replace(/```json|```/g,"").trim()).plan);
-    } catch{setMealError("생성 실패. 다시 시도해주세요.");}
+    } catch(e){
+      setMealError("생성 실패: " + e.message);
+    }
     setLoadingMeal(false);
   };
 
