@@ -409,7 +409,7 @@ function App() {
     <div style={{fontFamily:"Pretendard,-apple-system,sans-serif",background:T.bg,minHeight:"100vh",maxWidth:430,margin:"0 auto",color:T.ink,paddingBottom:88}}>
 
       {/* Header */}
-      <div style={{padding:"32px 20px 0"}}>
+      <div style={{padding:"32px 24px 0"}}>
         <div style={{fontSize:10,letterSpacing:".18em",color:T.muted,marginBottom:4}}>WHOLENESS · 영육강건</div>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-end"}}>
           <h1 style={{fontSize:28,fontWeight:800,letterSpacing:"-.03em",lineHeight:1.1}}>온전한 하루</h1>
@@ -439,7 +439,7 @@ function App() {
       )}
 
       {/* Tabs */}
-      <div style={{display:"flex",gap:2,margin:"18px 20px 0",background:"#EDE8DE",borderRadius:14,padding:4}}>
+      <div style={{display:"flex",gap:2,margin:"18px 24px 0",background:"#EDE8DE",borderRadius:14,padding:4}}>
         {[["today","기록"],["dopamine","도파민 리셋"],["meal","식단 플래너"]].map(([k,l])=>(
           <button key={k} onClick={()=>setTab(k)} style={{
             flex:1,padding:"9px 4px",borderRadius:11,border:"none",cursor:"pointer",
@@ -454,7 +454,7 @@ function App() {
 
       {/* ═══ TAB: TODAY ═══ */}
       {tab==="today"&&(
-        <div style={{padding:"16px 20px 0",display:"flex",flexDirection:"column",gap:14}}>
+        <div style={{padding:"16px 24px 0",display:"flex",flexDirection:"column",gap:14}}>
 
           {/* Hero card */}
           <div style={{
@@ -463,9 +463,13 @@ function App() {
             boxShadow:allOn?"0 0 0 2px rgba(124,111,247,.15),0 4px 24px rgba(0,0,0,.07)":"0 2px 16px rgba(0,0,0,.05)",
             transition:"border-color .4s,box-shadow .4s",
           }}>
-            <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:20,marginBottom:18}}>
-              <PersonIcon soul={soulOn} body={bodyOn} mind={mindOn}/>
-              <div>
+            <div style={{display:"flex",alignItems:"center",marginBottom:18}}>
+              {/* 사람 아이콘 — 좌측 공간의 중앙에 위치 */}
+              <div style={{width:"40%",display:"flex",justifyContent:"center",flexShrink:0}}>
+                <PersonIcon soul={soulOn} body={bodyOn} mind={mindOn}/>
+              </div>
+              {/* 점수 영역 */}
+              <div style={{flex:1}}>
                 <div style={{fontSize:38,fontWeight:900,letterSpacing:"-.04em",lineHeight:1,color:T.ink}}>
                   {ss+bs+ms}<span style={{fontSize:14,color:T.muted,fontWeight:400,marginLeft:3}}> / 21</span>
                 </div>
@@ -478,25 +482,21 @@ function App() {
                     </div>
                   ))}
                 </div>
+
               </div>
             </div>
-
-            {allOn&&(
-              <div className="popIn blessGlow" style={{
-                textAlign:"center",marginBottom:16,padding:"10px 14px",
-                background:"linear-gradient(135deg,#EFEEFF,#E6F6EE)",
-                borderRadius:14,border:`1px solid ${T.soul}30`,
-              }}>
-                <div style={{fontSize:14,fontWeight:700,color:T.soul,lineHeight:1.5}}>🎉 오늘 하루 온전합니다!</div>
-              </div>
-            )}
 
             <div style={{display:"flex",gap:10}}>
               <CatButton meta={CAT.soul} active={soulOn} score={ss} onToggle={readonly?undefined:()=>setSoulOn(s=>!s)}/>
               <CatButton meta={CAT.body} active={bodyOn} score={bs} onToggle={readonly?undefined:()=>setBodyOn(s=>!s)}/>
               <CatButton meta={CAT.mind} active={mindOn} score={ms} onToggle={readonly?undefined:()=>setMindOn(s=>!s)}/>
             </div>
-            {!readonly&&<div style={{textAlign:"center",marginTop:10,fontSize:10,color:T.muted}}>탭해서 오늘의 카테고리를 활성화하세요</div>}
+            <div style={{textAlign:"center",marginTop:10}}>
+              {allOn
+                ? <span className="popIn" style={{fontSize:13,fontWeight:700,color:T.soul}}>🎉 오늘 하루 온전합니다!</span>
+                : !readonly && <span style={{fontSize:10,color:T.muted}}>탭해서 오늘의 카테고리를 활성화하세요</span>
+              }
+            </div>
           </div>
 
           {/* Checklists */}
@@ -581,7 +581,7 @@ function App() {
 
       {/* ═══ TAB: DOPAMINE ═══ */}
       {tab==="dopamine"&&(
-        <div style={{padding:"16px 20px 0",display:"flex",flexDirection:"column",gap:14}}>
+        <div style={{padding:"16px 24px 0",display:"flex",flexDirection:"column",gap:14}}>
           <div style={{background:T.card,borderRadius:20,padding:"20px 18px",border:`1px solid ${T.border}`,boxShadow:"0 1px 8px rgba(0,0,0,.04)"}}>
             <div style={{fontSize:9,letterSpacing:".16em",color:T.muted,marginBottom:8}}>🧠 뇌과학 인사이트</div>
             <div style={{fontSize:14,fontWeight:700,lineHeight:1.65,color:T.ink,marginBottom:10}}>도파민 과잉은 역치를 높여 평범한 것들을 무감각하게 만듭니다.</div>
@@ -634,7 +634,7 @@ function App() {
 
       {/* ═══ TAB: MEAL ═══ */}
       {tab==="meal"&&(
-        <div style={{padding:"16px 20px 0",display:"flex",flexDirection:"column",gap:14}}>
+        <div style={{padding:"16px 24px 0",display:"flex",flexDirection:"column",gap:14}}>
           <div style={{background:T.card,borderRadius:20,padding:"20px 18px",border:`1px solid ${T.border}`,boxShadow:"0 1px 8px rgba(0,0,0,.04)"}}>
             <div style={{fontSize:13,fontWeight:700,color:T.ink,marginBottom:4}}>냉장고 재료 입력</div>
             <div style={{fontSize:11,color:T.muted,marginBottom:12}}>콤마 또는 줄바꿈으로 구분해 입력하세요</div>
@@ -692,9 +692,9 @@ function App() {
         display:"flex",padding:"10px 0 16px",
       }}>
         {[
-          ["today","기록","M9 7C9 9.209 7.209 11 5 11C2.791 11 1 9.209 1 7C1 4.791 2.791 3 5 3C7.209 3 9 4.791 9 7ZM1 17C1 13.686 3.686 11 7 11C10.314 11 13 13.686 13 17"],
+          ["today","기록","M9 5.5a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0ZM1 15.5c0-3.038 2.462-5.5 5.5-5.5s5.5 2.462 5.5 5.5"],
           ["dopamine","리셋","M9 2C5.686 2 3 4.686 3 8c0 2.21 1.13 4.16 2.84 5.31L5.5 15h7l-.34-1.69A6 6 0 0 0 15 8c0-3.314-2.686-6-6-6ZM7 15.5h4"],
-          ["meal","식단","M6 2v5c0 1.657 1.343 3 3 3s3-1.343 3-3V2M9 10v6M6 16h6"],
+          ["meal","식단","M2 9h14M3 9a7 7 0 0 1 12 0M5 14.5c0 .828 1.791 1.5 4 1.5s4-.672 4-1.5M5 14.5V12m8 2.5V12M9 12V9"],
         ].map(([k,l,p])=>(
           <button key={k} onClick={()=>setTab(k)} style={{
             flex:1,background:"none",border:"none",cursor:"pointer",
