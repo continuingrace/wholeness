@@ -327,6 +327,9 @@ function App() {
   const [showReward,setShowReward]   = useState(false);
 
   const [ingredients,setIngredients] = useState("");
+  const [backupMsg,setBackupMsg] = useState("");
+  const [restoreMsg,setRestoreMsg] = useState("");
+  const fileInputRef = useRef(null);
   const [mealPlan,setMealPlan]       = useState(null);
   const [loadingMeal,setLoadingMeal] = useState(false);
   const [mealError,setMealError]     = useState("");
@@ -386,6 +389,55 @@ function App() {
     setSaving(false);
   };
 
+  /* ── 백업 ── */
+  const exportBackup = () => {
+    const allKeys = Object.keys(localStorage).filter(k=>k.startsWith("whl_"));
+    const data = {};
+    allKeys.forEach(k=>{ data[k]=localStorage.getItem(k); });
+    const json = JSON.stringify({version:1, exportedAt:new Date().toISOString(), records:data}, null, 2);
+    const blob = new Blob([json],{type:"application/json"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href=url; a.download=`wholeness_backup_${todayStr()}.json`; a.click();
+    URL.revokeObjectURL(url);
+    setBackupMsg("✓ 백업 파일이 저장됐어요!");
+    setTimeout(()=>setBackupMsg(""),3000);
+  };
+
+  const exportEmail = () => {
+    const allKeys = Object.keys(localStorage).filter(k=>k.startsWith("whl_"));
+    const data = {};
+    allKeys.forEach(k=>{ data[k]=localStorage.getItem(k); });
+    const json = JSON.stringify({version:1, exportedAt:new Date().toISOString(), records:data});
+    const subject = encodeURIComponent("온전한 하루 백업 데이터");
+    const body = encodeURIComponent("아래 JSON을 복사해서 복구 시 사용하세요.\n\n" + json);
+    window.open(`mailto:?subject=${subject}&body=${body}`);
+  };
+
+  const importBackup = (e) => {
+    const file = e.target.files[0];
+    if(!file)return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const parsed = JSON.parse(ev.target.result);
+        const records = parsed.records || parsed;
+        let count = 0;
+        Object.entries(records).forEach(([k,v])=>{
+          if(k.startsWith("whl_")){ localStorage.setItem(k,v); count++; }
+        });
+        setRestoreMsg(`✓ ${count}일치 기록이 복구됐어요! 날짜를 선택해 확인하세요.`);
+        setChecks(loadDay(selDate));
+        setTimeout(()=>setRestoreMsg(""),5000);
+      } catch {
+        setRestoreMsg("파일 형식이 올바르지 않아요. 백업 파일을 확인해주세요.");
+        setTimeout(()=>setRestoreMsg(""),4000);
+      }
+    };
+    reader.readAsText(file);
+    e.target.value="";
+  };
+
   const generateMeals = async () => {
     if(!ingredients.trim()){setMealError("냉장고 재료를 입력해주세요.");return;}
     setLoadingMeal(true); setMealError(""); setMealPlan(null);
@@ -440,7 +492,7 @@ function App() {
 
       {/* Tabs */}
       <div style={{display:"flex",gap:2,margin:"18px 24px 0",background:"#EDE8DE",borderRadius:14,padding:4}}>
-        {[["today","기록"],["dopamine","도파민 리셋"],["meal","식단 플래너"]].map(([k,l])=>(
+        {[["today","기록"],["dopamine","도파민 리셋"],["meal","식단 플래너"],["backup","백업·복구"]].map(([k,l])=>(
           <button key={k} onClick={()=>setTab(k)} style={{
             flex:1,padding:"9px 4px",borderRadius:11,border:"none",cursor:"pointer",
             background:tab===k?T.card:"transparent",
@@ -683,6 +735,101 @@ function App() {
         </div>
       )}
 
+      {/* ═══ TAB: BACKUP ═══ */}
+      {tab==="backup"&&(
+        <div style={{padding:"16px 24px 0",display:"flex",flexDirection:"column",gap:14}}>
+
+          {/* 내보내기 */}
+          <div style={{background:T.card,borderRadius:20,padding:"20px 18px",border:`1px solid ${T.border}`,boxShadow:"0 1px 8px rgba(0,0,0,.04)"}}>
+            <div style={{fontSize:10,letterSpacing:".14em",color:T.muted,marginBottom:12}}>📤 데이터 내보내기</div>
+            <div style={{fontSize:12,color:T.sub,lineHeight:1.7,marginBottom:16}}>
+              지금까지의 모든 기록을 백업합니다.<br/>
+              기기를 바꾸거나 앱을 초기화할 때 사용하세요.
+            </div>
+            <div style={{display:"flex",flexDirection:"column",gap:8}}>
+              <button onClick={exportBackup} style={{
+                width:"100%",padding:"13px",
+                background:T.soul,color:"#fff",
+                border:"none",borderRadius:12,fontSize:13,fontWeight:700,cursor:"pointer",
+                display:"flex",alignItems:"center",justifyContent:"center",gap:8,
+                boxShadow:`0 4px 14px ${T.soul}44`,
+              }}>
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                  <path d="M7 1v8M4 6l3 3 3-3" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M1 10v1a2 2 0 002 2h8a2 2 0 002-2v-1" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
+                </svg>
+                JSON 파일로 저장
+              </button>
+              <button onClick={exportEmail} style={{
+                width:"100%",padding:"13px",
+                background:T.card,color:T.ink,
+                border:`1px solid ${T.border}`,borderRadius:12,fontSize:13,fontWeight:700,cursor:"pointer",
+                display:"flex",alignItems:"center",justifyContent:"center",gap:8,
+              }}>
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                  <rect x="1" y="3" width="12" height="9" rx="2" stroke="currentColor" strokeWidth="1.3"/>
+                  <path d="M1 5l6 4 6-4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
+                </svg>
+                메일로 보내기
+              </button>
+            </div>
+            {backupMsg&&<div style={{textAlign:"center",fontSize:12,color:T.body,marginTop:10,fontWeight:600}}>{backupMsg}</div>}
+          </div>
+
+          {/* 불러오기 */}
+          <div style={{background:T.card,borderRadius:20,padding:"20px 18px",border:`1px solid ${T.border}`,boxShadow:"0 1px 8px rgba(0,0,0,.04)"}}>
+            <div style={{fontSize:10,letterSpacing:".14em",color:T.muted,marginBottom:12}}>📥 데이터 복구</div>
+            <div style={{fontSize:12,color:T.sub,lineHeight:1.7,marginBottom:16}}>
+              저장해둔 백업 파일(.json)을 불러와<br/>
+              모든 기록을 복구합니다.
+            </div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".json,application/json"
+              onChange={importBackup}
+              style={{display:"none"}}
+            />
+            <button onClick={()=>fileInputRef.current&&fileInputRef.current.click()} style={{
+              width:"100%",padding:"13px",
+              background:T.body,color:"#fff",
+              border:"none",borderRadius:12,fontSize:13,fontWeight:700,cursor:"pointer",
+              display:"flex",alignItems:"center",justifyContent:"center",gap:8,
+              boxShadow:`0 4px 14px ${T.body}44`,
+            }}>
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <path d="M7 9V1M4 4l3-3 3 3" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M1 10v1a2 2 0 002 2h8a2 2 0 002-2v-1" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
+              </svg>
+              백업 파일 불러오기
+            </button>
+            {restoreMsg&&(
+              <div style={{
+                marginTop:12,padding:"10px 14px",
+                background:restoreMsg.startsWith("✓")?T.bodyBg:"#FEE2E2",
+                borderRadius:10,fontSize:12,fontWeight:600,
+                color:restoreMsg.startsWith("✓")?T.body:"#DC2626",
+                lineHeight:1.5,
+              }}>{restoreMsg}</div>
+            )}
+          </div>
+
+          {/* 안내 */}
+          <div style={{background:T.soulBg,borderRadius:16,padding:"14px 16px",border:`1px solid ${T.soul}20`}}>
+            <div style={{fontSize:11,fontWeight:700,color:T.soul,marginBottom:8}}>💡 백업 방법 안내</div>
+            {[
+              "정기적으로 JSON 파일로 저장해두세요",
+              "파일은 iCloud Drive나 Google Drive에 보관하면 안전해요",
+              "메일로 보내기는 본인 메일로 전송해 보관할 수 있어요",
+              "복구 시 기존 같은 날짜 데이터는 덮어씌워져요",
+            ].map((t,i)=>(
+              <div key={i} style={{fontSize:11,color:T.sub,marginBottom:3}}>· {t}</div>
+            ))}
+          </div>
+
+        </div>
+      )}
+
       {/* Bottom nav */}
       <div style={{
         position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",
@@ -695,6 +842,7 @@ function App() {
           ["today","기록","M9 5.5a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0ZM1 15.5c0-3.038 2.462-5.5 5.5-5.5s5.5 2.462 5.5 5.5"],
           ["dopamine","리셋","M9 2C5.686 2 3 4.686 3 8c0 2.21 1.13 4.16 2.84 5.31L5.5 15h7l-.34-1.69A6 6 0 0 0 15 8c0-3.314-2.686-6-6-6ZM7 15.5h4"],
           ["meal","식단","M2 9h14M3 9a7 7 0 0 1 12 0M5 14.5c0 .828 1.791 1.5 4 1.5s4-.672 4-1.5M5 14.5V12m8 2.5V12M9 12V9"],
+          ["backup","백업","M9 1v10M6 8l3 3 3-3M2 13v2a2 2 0 002 2h10a2 2 0 002-2v-2"],
         ].map(([k,l,p])=>(
           <button key={k} onClick={()=>setTab(k)} style={{
             flex:1,background:"none",border:"none",cursor:"pointer",
