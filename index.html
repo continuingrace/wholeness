@@ -309,6 +309,96 @@ function ShareCardEl({ dateStr, checks, soulOn, bodyOn, mindOn, ss, bs, ms }) {
   );
 }
 
+/* ── API Key Section (백업 탭용) ── */
+function ApiKeySection() {
+  const [key, setKey] = React.useState(localStorage.getItem("whl_apikey")||"");
+  const [saved, setSaved] = React.useState(false);
+  const save = () => {
+    if(!key.trim()){localStorage.removeItem("whl_apikey");}
+    else{localStorage.setItem("whl_apikey", key.trim());}
+    setSaved(true);
+    setTimeout(()=>setSaved(false), 2000);
+  };
+  const T2 = {soul:"#7C6FF7",soulBg:"#EFEEFF",border:"#E8E3DA",ink:"#1A1A1A",sub:"#6B6B6B",muted:"#ABABAB",card:"#FFFFFF"};
+  return (
+    <div style={{background:T2.card,borderRadius:20,padding:"20px 18px",border:`1px solid ${T2.border}`,boxShadow:"0 1px 8px rgba(0,0,0,.04)"}}>
+      <div style={{fontSize:10,letterSpacing:".14em",color:T2.muted,marginBottom:12}}>⚙️ AI 식단 생성 설정</div>
+      <div style={{fontSize:12,color:T2.sub,lineHeight:1.7,marginBottom:12}}>
+        Anthropic API 키를 저장하면 AI 식단 플래너를 사용할 수 있어요.<br/>
+        키는 이 기기 로컬에만 저장돼요.
+      </div>
+      <div style={{display:"flex",gap:8,marginBottom:8}}>
+        <input
+          type="password"
+          value={key}
+          onChange={e=>setKey(e.target.value)}
+          onKeyDown={e=>e.key==="Enter"&&save()}
+          placeholder="sk-ant-api03-..."
+          style={{
+            flex:1,padding:"10px 12px",borderRadius:10,
+            border:`1px solid ${T2.border}`,background:"#FAFAF7",
+            fontSize:12,fontFamily:"Pretendard,sans-serif",
+            color:T2.ink,outline:"none",
+          }}
+        />
+        <button onClick={save} style={{
+          padding:"10px 16px",background:T2.soul,color:"#fff",
+          border:"none",borderRadius:10,fontSize:12,fontWeight:700,
+          cursor:"pointer",fontFamily:"Pretendard,sans-serif",whiteSpace:"nowrap",
+          boxShadow:`0 3px 10px ${T2.soul}44`,
+        }}>{saved?"✓ 저장됨":"저장"}</button>
+      </div>
+      <div style={{fontSize:10,color:T2.muted}}>
+        API 키 발급 → <a href="https://console.anthropic.com" target="_blank" style={{color:T2.soul,fontWeight:600}}>console.anthropic.com</a>
+      </div>
+    </div>
+  );
+}
+
+/* ── API Key Banner ── */
+function ApiKeyBanner() {
+  const [key, setKey] = React.useState("");
+  const [saved, setSaved] = React.useState(false);
+  const save = () => {
+    if(!key.trim())return;
+    localStorage.setItem("whl_apikey", key.trim());
+    setSaved(true);
+    setTimeout(()=>window.location.reload(), 800);
+  };
+  return (
+    <div style={{background:"#FEF9EE",borderRadius:16,padding:"14px 16px",border:"1px solid #F5C842"}}>
+      <div style={{fontSize:11,fontWeight:700,color:"#92700A",marginBottom:6}}>⚙️ AI 식단 생성 — API 키 필요</div>
+      <div style={{fontSize:11,color:"#7A6010",lineHeight:1.6,marginBottom:10}}>
+        Anthropic API 키를 입력하면 AI 식단 생성을 사용할 수 있어요.<br/>
+        키는 이 기기에만 저장되며 외부로 전송되지 않아요.
+      </div>
+      <div style={{display:"flex",gap:8}}>
+        <input
+          type="password"
+          value={key}
+          onChange={e=>setKey(e.target.value)}
+          onKeyDown={e=>e.key==="Enter"&&save()}
+          placeholder="sk-ant-api03-..."
+          style={{
+            flex:1,padding:"9px 12px",borderRadius:10,
+            border:"1px solid #E5C84A",background:"#FFFDF0",
+            fontSize:12,fontFamily:"Pretendard,sans-serif",
+            color:"#1A1A1A",outline:"none",
+          }}
+        />
+        <button onClick={save} style={{
+          padding:"9px 14px",background:"#92700A",color:"#fff",
+          border:"none",borderRadius:10,fontSize:12,fontWeight:700,cursor:"pointer",
+          fontFamily:"Pretendard,sans-serif",whiteSpace:"nowrap",
+        }}>{saved?"✓ 저장됨":"저장"}</button>
+      </div>
+      <div style={{fontSize:10,color:"#A08020",marginTop:8}}>
+        · API 키: <a href="https://console.anthropic.com" target="_blank" style={{color:"#92700A"}}>console.anthropic.com</a> 에서 발급
+      </div>
+    </div>
+  );
+}
+
 /* ══════════════════════════════════════════════ */
 function App() {
   const [tab,setTab]         = useState("today");
@@ -635,9 +725,23 @@ function App() {
       {tab==="dopamine"&&(
         <div style={{padding:"16px 24px 0",display:"flex",flexDirection:"column",gap:14}}>
           <div style={{background:T.card,borderRadius:20,padding:"20px 18px",border:`1px solid ${T.border}`,boxShadow:"0 1px 8px rgba(0,0,0,.04)"}}>
-            <div style={{fontSize:9,letterSpacing:".16em",color:T.muted,marginBottom:8}}>🧠 뇌과학 인사이트</div>
-            <div style={{fontSize:14,fontWeight:700,lineHeight:1.65,color:T.ink,marginBottom:10}}>도파민 과잉은 역치를 높여 평범한 것들을 무감각하게 만듭니다.</div>
-            <div style={{fontSize:11,color:T.sub,lineHeight:1.8}}>숏폼·소셜 미디어는 예측 오류 기반 도파민을 과자극합니다. <span style={{color:T.soul,fontWeight:600}}>슬로우 도파민</span> — 운동, 독서, 기도, 자연 — 이 진짜 회복의 원천입니다.</div>
+            {(()=>{
+              const INSIGHTS=[
+                {title:"도파민 과잉은 역치를 높여 평범한 것들을 무감각하게 만듭니다.",body:"숏폼·소셜 미디어는 예측 오류 기반 도파민을 과자극합니다.",keyword:"슬로우 도파민",keyBody:"— 운동, 독서, 기도, 자연 — 이 진짜 회복의 원천입니다."},
+                {title:"수면 중 뇌는 독소를 청소하고 기억을 정리합니다.",body:"7시간 미만 수면은 전전두피질 기능을 떨어뜨려 판단력과 감정 조절을 약화시킵니다.",keyword:"깊은 수면",keyBody:"이 최고의 뇌 회복제입니다."},
+                {title:"감사는 뇌의 구조를 바꿉니다.",body:"감사 일기를 3주 이상 쓰면 내측전전두피질이 두꺼워지고 부정 편향이 줄어드는 것이 MRI로 확인됩니다.",keyword:"감사 훈련",keyBody:"은 가장 저비용 고효율의 멘탈 관리법입니다."},
+                {title:"걷기는 뇌의 창의력 스위치를 켭니다.",body:"Stanford 연구에 따르면 걷는 동안 창의적 사고가 앉아있을 때보다 81% 증가합니다.",keyword:"야외 걷기",keyBody:"는 머리를 비우면서 동시에 채웁니다."},
+                {title:"호흡은 유일하게 의식으로 자율신경계를 조절하는 방법입니다.",body:"4-7-8 호흡 또는 천천히 내쉬기만으로도 미주신경이 자극되어 스트레스 반응이 즉시 완화됩니다.",keyword:"느린 호흡",keyBody:"은 언제 어디서나 쓸 수 있는 최강의 리셋 도구입니다."},
+                {title:"사회적 연결은 뇌의 통증 회로를 줄여줍니다.",body:"고립감은 뇌에서 신체 통증과 동일한 부위를 활성화합니다. 공동체 교제는 선택이 아닌 필수입니다.",keyword:"공동체",keyBody:"안에서 우리는 더 건강해집니다."},
+                {title:"자연은 주의력을 회복시키는 가장 빠른 환경입니다.",body:"도시 환경과 달리 자연의 자극은 하향식 주의를 요구하지 않아 뇌가 자발적으로 쉬게 됩니다.",keyword:"자연 속 20분",keyBody:"이 커피 한 잔보다 집중력을 더 오래 유지시킵니다."},
+              ];
+              const ins=INSIGHTS[new Date().getDay()];
+              return <>
+                <div style={{fontSize:9,letterSpacing:".16em",color:T.muted,marginBottom:8}}>🧠 오늘의 뇌과학 인사이트</div>
+                <div style={{fontSize:14,fontWeight:700,lineHeight:1.65,color:T.ink,marginBottom:10}}>{ins.title}</div>
+                <div style={{fontSize:11,color:T.sub,lineHeight:1.8}}>{ins.body} <span style={{color:T.soul,fontWeight:600}}>{ins.keyword}</span> {ins.keyBody}</div>
+              </>;
+            })()}
           </div>
 
           <div style={{background:T.card,borderRadius:20,overflow:"hidden",border:`1px solid ${T.border}`,boxShadow:"0 1px 8px rgba(0,0,0,.04)"}}>
@@ -687,6 +791,11 @@ function App() {
       {/* ═══ TAB: MEAL ═══ */}
       {tab==="meal"&&(
         <div style={{padding:"16px 24px 0",display:"flex",flexDirection:"column",gap:14}}>
+          {/* API Key 설정 */}
+          {!localStorage.getItem("whl_apikey")&&(
+            <ApiKeyBanner/>
+          )}
+
           <div style={{background:T.card,borderRadius:20,padding:"20px 18px",border:`1px solid ${T.border}`,boxShadow:"0 1px 8px rgba(0,0,0,.04)"}}>
             <div style={{fontSize:13,fontWeight:700,color:T.ink,marginBottom:4}}>냉장고 재료 입력</div>
             <div style={{fontSize:11,color:T.muted,marginBottom:12}}>콤마 또는 줄바꿈으로 구분해 입력하세요</div>
@@ -826,6 +935,9 @@ function App() {
               <div key={i} style={{fontSize:11,color:T.sub,marginBottom:3}}>· {t}</div>
             ))}
           </div>
+
+          {/* API 키 관리 */}
+          <ApiKeySection/>
 
         </div>
       )}
