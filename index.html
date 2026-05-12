@@ -324,25 +324,19 @@ function App() {
 
   const importBackup = e => {
     const file=e.target.files[0]; if(!file)return;
-    new FileReader().onload=ev=>{
-      try {
-        const records=(JSON.parse(ev.target.result).records)||JSON.parse(ev.target.result);
-        let count=0; Object.entries(records).forEach(([k,v])=>{ if(k.startsWith("whl_")){localStorage.setItem(k,v);count++;} });
-        const t=todayStr(); setSelDate(t); setDayData(loadDay(t));
-        setRestoreMsg(`✓ ${count}일치 기록이 복구됐어요!`);
-      } catch{ setRestoreMsg("파일 형식이 올바르지 않아요."); }
-      setTimeout(()=>setRestoreMsg(""),5000);
-    }; (new FileReader()).onload; // placeholder - use below
-    const reader=new FileReader(); reader.onload=ev=>{
+    const reader=new FileReader();
+    reader.onload=ev=>{
       try {
         const parsed=JSON.parse(ev.target.result);
         const records=parsed.records||parsed;
-        let count=0; Object.entries(records).forEach(([k,v])=>{ if(k.startsWith("whl_")){localStorage.setItem(k,v);count++;} });
+        let count=0;
+        Object.entries(records).forEach(([k,v])=>{ if(k.startsWith("whl_")){localStorage.setItem(k,v);count++;} });
         const t=todayStr(); setSelDate(t); setDayData(loadDay(t));
         setRestoreMsg(`✓ ${count}일치 기록이 복구됐어요!`);
       } catch{ setRestoreMsg("파일 형식이 올바르지 않아요."); }
       setTimeout(()=>setRestoreMsg(""),5000);
-    }; reader.readAsText(file); e.target.value="";
+    };
+    reader.readAsText(file); e.target.value="";
   };
 
   const generateMeals = async () => {
@@ -530,33 +524,31 @@ function App() {
 
           {mealPlan&&(
             <div>
-            <div ref={mealCardRef} style={{background:T.card,borderRadius:20,overflow:"hidden",border:`1px solid ${T.border}`,boxShadow:"0 1px 8px rgba(0,0,0,.04)"}}>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"14px 16px 12px",borderBottom:`1px solid ${T.border}`,background:`linear-gradient(90deg,${T.bodyBg},transparent)`}}>
-                <div style={{display:"flex",alignItems:"center",gap:8}}><div style={{width:7,height:7,borderRadius:"50%",background:T.body}}/><span style={{fontSize:13,fontWeight:800,color:T.body}}>이번 주 식단 플랜</span></div>
-                <button onClick={()=>{setMealPlan(null);localStorage.removeItem("whl_mealplan");}} style={{fontSize:10,color:T.muted,background:"none",border:`1px solid ${T.border}`,borderRadius:8,padding:"4px 10px",cursor:"pointer",fontFamily:"Pretendard,sans-serif"}}>🔄 새로 생성</button>
-              </div>
-              <div style={{padding:"12px"}}>
-                {mealPlan.map((day,i)=>(
-                  <div key={i} style={{marginBottom:10,borderRadius:14,overflow:"hidden",border:`1px solid ${T.border}`}}>
-                    <div style={{background:T.body,padding:"7px 14px"}}><span style={{fontSize:12,fontWeight:800,color:"#fff"}}>{day.day}요일</span></div>
-                    <div style={{background:T.surface,padding:"10px 14px",display:"flex",flexDirection:"column",gap:8}}>
-                      {day.breakfast&&<><div style={{display:"flex",gap:10,alignItems:"flex-start"}}><div style={{fontSize:9,fontWeight:700,color:"#E07C3A",minWidth:28,paddingTop:1}}>아침</div><div><div style={{fontSize:12,fontWeight:600,color:T.ink}}>{day.breakfast.menu}</div>{day.breakfast.tip&&<div style={{fontSize:10,color:T.muted,marginTop:1}}>💡 {day.breakfast.tip}</div>}</div></div><div style={{height:1,background:T.border}}/></>}
-                      {day.snack&&<><div style={{display:"flex",gap:10,alignItems:"flex-start"}}><div style={{fontSize:9,fontWeight:700,color:T.mind,minWidth:28,paddingTop:1}}>간식</div><div><div style={{fontSize:12,fontWeight:600,color:T.ink}}>{day.snack.menu}</div>{day.snack.tip&&<div style={{fontSize:10,color:T.muted,marginTop:1}}>💡 {day.snack.tip}</div>}</div></div><div style={{height:1,background:T.border}}/></>}
-                      {day.lunch&&<div style={{display:"flex",gap:10,alignItems:"flex-start"}}><div style={{fontSize:9,fontWeight:700,color:T.body,minWidth:28,paddingTop:1}}>점심</div><div style={{flex:1}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}><div style={{fontSize:12,fontWeight:600,color:T.ink}}>{day.lunch.menu}</div>{day.lunch.kcal&&<span style={{fontSize:9,color:T.muted}}>{day.lunch.kcal}</span>}</div><div style={{display:"flex",flexWrap:"wrap",gap:3,marginTop:4}}>{(day.lunch.ingredients||[]).map((ing,j)=><span key={j} style={{fontSize:9,padding:"2px 7px",background:T.bodyBg,color:T.body,borderRadius:20,fontWeight:500}}>{ing}</span>)}</div>{day.lunch.tip&&<div style={{fontSize:10,color:T.muted,marginTop:4,fontStyle:"italic"}}>💡 {day.lunch.tip}</div>}</div></div>}
+              <div ref={mealCardRef} style={{background:T.card,borderRadius:20,overflow:"hidden",border:`1px solid ${T.border}`,boxShadow:"0 1px 8px rgba(0,0,0,.04)"}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"14px 16px 12px",borderBottom:`1px solid ${T.border}`,background:`linear-gradient(90deg,${T.bodyBg},transparent)`}}>
+                  <div style={{display:"flex",alignItems:"center",gap:8}}><div style={{width:7,height:7,borderRadius:"50%",background:T.body}}/><span style={{fontSize:13,fontWeight:800,color:T.body}}>이번 주 식단 플랜</span></div>
+                  <button onClick={()=>{setMealPlan(null);localStorage.removeItem("whl_mealplan");}} style={{fontSize:10,color:T.muted,background:"none",border:`1px solid ${T.border}`,borderRadius:8,padding:"4px 10px",cursor:"pointer",fontFamily:"Pretendard,sans-serif"}}>🔄 새로 생성</button>
+                </div>
+                <div style={{padding:"12px"}}>
+                  {mealPlan.map((day,i)=>(
+                    <div key={i} style={{marginBottom:10,borderRadius:14,overflow:"hidden",border:`1px solid ${T.border}`}}>
+                      <div style={{background:T.body,padding:"7px 14px"}}><span style={{fontSize:12,fontWeight:800,color:"#fff"}}>{day.day}요일</span></div>
+                      <div style={{background:T.surface,padding:"10px 14px",display:"flex",flexDirection:"column",gap:8}}>
+                        {day.breakfast&&<><div style={{display:"flex",gap:10,alignItems:"flex-start"}}><div style={{fontSize:9,fontWeight:700,color:"#E07C3A",minWidth:28,paddingTop:1}}>아침</div><div><div style={{fontSize:12,fontWeight:600,color:T.ink}}>{day.breakfast.menu}</div>{day.breakfast.tip&&<div style={{fontSize:10,color:T.muted,marginTop:1}}>💡 {day.breakfast.tip}</div>}</div></div><div style={{height:1,background:T.border}}/></>}
+                        {day.snack&&<><div style={{display:"flex",gap:10,alignItems:"flex-start"}}><div style={{fontSize:9,fontWeight:700,color:T.mind,minWidth:28,paddingTop:1}}>간식</div><div><div style={{fontSize:12,fontWeight:600,color:T.ink}}>{day.snack.menu}</div>{day.snack.tip&&<div style={{fontSize:10,color:T.muted,marginTop:1}}>💡 {day.snack.tip}</div>}</div></div><div style={{height:1,background:T.border}}/></>}
+                        {day.lunch&&<div style={{display:"flex",gap:10,alignItems:"flex-start"}}><div style={{fontSize:9,fontWeight:700,color:T.body,minWidth:28,paddingTop:1}}>점심</div><div style={{flex:1}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}><div style={{fontSize:12,fontWeight:600,color:T.ink}}>{day.lunch.menu}</div>{day.lunch.kcal&&<span style={{fontSize:9,color:T.muted}}>{day.lunch.kcal}</span>}</div><div style={{display:"flex",flexWrap:"wrap",gap:3,marginTop:4}}>{(day.lunch.ingredients||[]).map((ing,j)=><span key={j} style={{fontSize:9,padding:"2px 7px",background:T.bodyBg,color:T.body,borderRadius:20,fontWeight:500}}>{ing}</span>)}</div>{day.lunch.tip&&<div style={{fontSize:10,color:T.muted,marginTop:4,fontStyle:"italic"}}>💡 {day.lunch.tip}</div>}</div></div>}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
+              <button onClick={saveMealImage} disabled={savingMeal} style={{width:"100%",marginTop:10,padding:"13px",background:savingMeal?T.muted:"#1A1A1A",color:"#fff",border:"none",borderRadius:14,fontSize:13,fontWeight:700,cursor:savingMeal?"not-allowed":"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:8,boxShadow:"0 4px 14px rgba(0,0,0,.18)",transition:"all .2s"}}>
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1v8M4 6l3 3 3-3" stroke="white" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/><path d="M1 10v1a2 2 0 002 2h8a2 2 0 002-2v-1" stroke="white" strokeWidth="1.4" strokeLinecap="round"/></svg>
+                {savingMeal?"저장 중...":"식단 이미지 저장"}
+              </button>
+              {mealSaveMsg&&<div style={{textAlign:"center",fontSize:12,color:T.body,marginTop:8,fontWeight:600}}>{mealSaveMsg}</div>}
             </div>
           )}
-
-            </div>{/* mealCardRef */}
-            <button onClick={saveMealImage} disabled={savingMeal} style={{width:"100%",marginTop:10,padding:"13px",background:savingMeal?T.muted:"#1A1A1A",color:"#fff",border:"none",borderRadius:14,fontSize:13,fontWeight:700,cursor:savingMeal?"not-allowed":"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:8,boxShadow:"0 4px 14px rgba(0,0,0,.18)",transition:"all .2s"}}>
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1v8M4 6l3 3 3-3" stroke="white" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/><path d="M1 10v1a2 2 0 002 2h8a2 2 0 002-2v-1" stroke="white" strokeWidth="1.4" strokeLinecap="round"/></svg>
-              {savingMeal?"저장 중...":"식단 이미지 저장"}
-            </button>
-            {mealSaveMsg&&<div style={{textAlign:"center",fontSize:12,color:T.body,marginTop:8,fontWeight:600}}>{mealSaveMsg}</div>}
-            </div>{/* outer wrapper */}
 
           <div style={{background:T.bodyBg,borderRadius:16,padding:"14px 16px",border:`1px solid ${T.body}20`}}>
             <div style={{fontSize:11,fontWeight:700,color:T.body,marginBottom:8}}>건강 식단 원칙</div>
