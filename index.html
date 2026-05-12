@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
   <meta name="theme-color" content="#F5F2EC"/>
   <title>온전한 하루 · Wholeness</title>
-  <!-- PWA -->
   <link rel="manifest" href="manifest.json"/>
   <link rel="apple-touch-icon" href="apple-touch-icon.png"/>
   <meta name="apple-mobile-web-app-capable" content="yes"/>
@@ -20,32 +19,25 @@
     ::-webkit-scrollbar{width:0;}
     @keyframes fadeUp{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:none;}}
     @keyframes popIn{0%{transform:scale(.88);opacity:0;}70%{transform:scale(1.04);}100%{transform:scale(1);opacity:1;}}
-    @keyframes blessGlow{0%,100%{box-shadow:0 0 0 0 rgba(124,111,247,0);}50%{box-shadow:0 0 28px 6px rgba(124,111,247,.18);}}
     .fadeUp{animation:fadeUp .32s cubic-bezier(.22,1,.36,1) both;}
     .popIn{animation:popIn .4s cubic-bezier(.34,1.3,.64,1) both;}
-    .blessGlow{animation:blessGlow 2.4s ease-in-out infinite;}
   </style>
 </head>
 <body>
   <div id="root"></div>
-
   <script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7/babel.min.js"></script>
-
   <script type="text/babel">
 const { useState, useEffect, useCallback, useRef } = React;
 
-/* ── Tokens ── */
 const T = {
   bg:"#F5F2EC", card:"#FFFFFF", surface:"#FAFAF7", border:"#E8E3DA",
   ink:"#1A1A1A", sub:"#6B6B6B", muted:"#ABABAB",
   soul:"#7C6FF7", body:"#3DAB80", mind:"#B06090",
   soulBg:"#EFEEFF", bodyBg:"#E6F6EE", mindBg:"#F9EDF4",
-  soulDark:"#5A50D0", bodyDark:"#2D8A60", mindDark:"#8A4570",
 };
 
-/* ── Checklist ── */
 const CHECKLIST = {
   soul:[
     {id:"s1",label:"성경 읽기",icon:"📖"},
@@ -76,124 +68,79 @@ const CHECKLIST = {
   ],
 };
 const CAT = {
-  soul:{label:"영적",     color:T.soul, bg:T.soulBg, emoji:"🙏"},
-  body:{label:"신체",     color:T.body, bg:T.bodyBg, emoji:"🏃"},
-  mind:{label:"멘탈·예술",color:T.mind, bg:T.mindBg, emoji:"🎨"},
+  soul:{label:"영적",      color:T.soul, bg:T.soulBg, emoji:"🙏"},
+  body:{label:"신체",      color:T.body, bg:T.bodyBg, emoji:"🏃"},
+  mind:{label:"멘탈·예술", color:T.mind, bg:T.mindBg, emoji:"🎨"},
 };
+const ALL_ITEMS = [...CHECKLIST.soul,...CHECKLIST.body,...CHECKLIST.mind];
 
-/* ── Storage ── */
 const todayStr = () => new Date().toISOString().slice(0,10);
 const loadDay  = d => { try{ return JSON.parse(localStorage.getItem("whl_"+d)||"{}"); }catch{return{};} };
 const saveDay  = (d,v) => localStorage.setItem("whl_"+d, JSON.stringify(v));
 
-/* ── Dopamine missions ── */
 const MISSIONS=[
-  {text:"알림 10분 끄고 창밖 바라보기",sci:"주의 회복 이론(ART): 자연 자극이 directed attention을 회복시킵니다",reward:"🌿 잠깐의 고요함이 하루를 바꿨어요."},
-  {text:"물 한 잔, 천천히 맛에 집중하며 마시기",sci:"마음챙김: 감각 집중 시 디폴트 모드 네트워크가 조용해집니다",reward:"💧 완전한 현존의 순간이었어요."},
-  {text:"감사한 것 3가지 손으로 써보기",sci:"긍정심리학: 감사 기록은 도파민·세로토닌 경로를 동시에 활성화합니다",reward:"✍️ 당신의 뇌가 좋음에 주목하기 시작했어요."},
-  {text:"5분 맨발 걷기 또는 스트레칭",sci:"접지(Grounding): 감각 입력이 자율신경계를 부교감으로 전환합니다",reward:"🌱 몸이 고마워하고 있어요."},
-  {text:"찬양 1곡을 눈 감고 온전히 듣기",sci:"음악과 도파민: 기대와 해소 패턴이 쾌감 회로를 건강하게 자극합니다",reward:"🎵 그 멜로디가 당신 안에 남았습니다."},
-  {text:"20분 SNS 없이 산책하기",sci:"디지털 단식: 자극 역치가 정상화되어 일상에서 기쁨을 느끼게 됩니다",reward:"🚶 오늘 당신의 뇌는 조금 더 자유롭습니다."},
-  {text:"성경 한 구절 소리 내어 읽고 묵상",sci:"의미 기반 보상: 초월적 연결감이 내측전전두피질을 활성화합니다",reward:"📖 말씀이 당신 안에 심겼습니다."},
+  {text:"알림 10분 끄고 창밖 바라보기",        sci:"주의 회복 이론(ART): 자연 자극이 directed attention을 회복시킵니다",    reward:"🌿 잠깐의 고요함이 하루를 바꿨어요."},
+  {text:"물 한 잔, 천천히 맛에 집중하며 마시기", sci:"마음챙김: 감각 집중 시 디폴트 모드 네트워크가 조용해집니다",           reward:"💧 완전한 현존의 순간이었어요."},
+  {text:"감사한 것 3가지 손으로 써보기",         sci:"긍정심리학: 감사 기록은 도파민·세로토닌 경로를 동시에 활성화합니다",    reward:"✍️ 당신의 뇌가 좋음에 주목하기 시작했어요."},
+  {text:"5분 맨발 걷기 또는 스트레칭",          sci:"접지(Grounding): 감각 입력이 자율신경계를 부교감으로 전환합니다",       reward:"🌱 몸이 고마워하고 있어요."},
+  {text:"찬양 1곡을 눈 감고 온전히 듣기",       sci:"음악과 도파민: 기대와 해소 패턴이 쾌감 회로를 건강하게 자극합니다",     reward:"🎵 그 멜로디가 당신 안에 남았습니다."},
+  {text:"20분 SNS 없이 산책하기",              sci:"디지털 단식: 자극 역치가 정상화되어 일상에서 기쁨을 느끼게 됩니다",     reward:"🚶 오늘 당신의 뇌는 조금 더 자유롭습니다."},
+  {text:"성경 한 구절 소리 내어 읽고 묵상",     sci:"의미 기반 보상: 초월적 연결감이 내측전전두피질을 활성화합니다",         reward:"📖 말씀이 당신 안에 심겼습니다."},
+];
+const INSIGHTS=[
+  {title:"도파민 과잉은 역치를 높여 평범한 것들을 무감각하게 만듭니다.",       body:"숏폼·소셜 미디어는 예측 오류 기반 도파민을 과자극합니다.",       kw:"슬로우 도파민",  kb:"— 운동, 독서, 기도, 자연 — 이 진짜 회복의 원천입니다."},
+  {title:"수면 중 뇌는 독소를 청소하고 기억을 정리합니다.",                  body:"7시간 미만 수면은 전전두피질 기능을 떨어뜨려 판단력과 감정 조절을 약화시킵니다.", kw:"깊은 수면", kb:"이 최고의 뇌 회복제입니다."},
+  {title:"감사는 뇌의 구조를 바꿉니다.",                                   body:"감사 일기를 3주 이상 쓰면 내측전전두피질이 두꺼워지고 부정 편향이 줄어드는 것이 MRI로 확인됩니다.", kw:"감사 훈련", kb:"은 가장 저비용 고효율의 멘탈 관리법입니다."},
+  {title:"걷기는 뇌의 창의력 스위치를 켭니다.",                             body:"Stanford 연구에 따르면 걷는 동안 창의적 사고가 앉아있을 때보다 81% 증가합니다.", kw:"야외 걷기", kb:"는 머리를 비우면서 동시에 채웁니다."},
+  {title:"호흡은 의식으로 자율신경계를 조절하는 유일한 방법입니다.",            body:"천천히 내쉬기만으로도 미주신경이 자극되어 스트레스 반응이 즉시 완화됩니다.", kw:"느린 호흡", kb:"은 언제 어디서나 쓸 수 있는 최강의 리셋 도구입니다."},
+  {title:"사회적 연결은 뇌의 통증 회로를 줄여줍니다.",                       body:"고립감은 뇌에서 신체 통증과 동일한 부위를 활성화합니다. 공동체 교제는 선택이 아닌 필수입니다.", kw:"공동체", kb:"안에서 우리는 더 건강해집니다."},
+  {title:"자연은 주의력을 회복시키는 가장 빠른 환경입니다.",                   body:"도시 환경과 달리 자연의 자극은 하향식 주의를 요구하지 않아 뇌가 자발적으로 쉬게 됩니다.", kw:"자연 속 20분", kb:"이 커피 한 잔보다 집중력을 더 오래 유지시킵니다."},
 ];
 
-/* ── Person SVG ── */
+/* ── Components ── */
 function PersonIcon({ soul, body, mind }) {
-  const all = soul && body && mind;
+  const all = soul&&body&&mind;
   return (
     <svg viewBox="0 0 80 100" width="72" height="90" style={{overflow:"visible",display:"block"}}>
-      <defs>
-        <filter id="pGlow" x="-30%" y="-30%" width="160%" height="160%">
-          <feGaussianBlur stdDeviation="2.5" result="blur"/>
-          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-        </filter>
-      </defs>
-      <circle cx="40" cy="14" r="12" fill={soul?T.soul:"#D9D4CA"} style={{transition:"fill .35s ease"}} filter={soul?"url(#pGlow)":undefined}/>
-      <rect x="22" y="30" width="36" height="28" rx="10" fill={body?T.body:"#D9D4CA"} style={{transition:"fill .35s ease"}} filter={body?"url(#pGlow)":undefined}/>
-      <rect x="2" y="32" width="18" height="9" rx="4.5" fill={body?T.body:"#D9D4CA"} style={{transition:"fill .35s ease"}}/>
-      <rect x="60" y="32" width="18" height="9" rx="4.5" fill={body?T.body:"#D9D4CA"} style={{transition:"fill .35s ease"}}/>
-      <rect x="24" y="60" width="13" height="30" rx="6.5" fill={mind?T.mind:"#D9D4CA"} style={{transition:"fill .35s ease"}} filter={mind?"url(#pGlow)":undefined}/>
-      <rect x="43" y="60" width="13" height="30" rx="6.5" fill={mind?T.mind:"#D9D4CA"} style={{transition:"fill .35s ease"}}/>
-      {soul && <>
-        <circle cx="35" cy="13" r="1.8" fill="white" opacity="0.9"/>
-        <circle cx="45" cy="13" r="1.8" fill="white" opacity="0.9"/>
-        <path d="M34 19 Q40 23 46 19" stroke="white" strokeWidth="1.4" fill="none" strokeLinecap="round"/>
-      </>}
-      {all && <>
-        <circle cx="40" cy="-4" r="2.5" fill={T.soul} opacity="0.9"/>
-        <circle cx="14" cy="4"  r="1.8" fill={T.mind} opacity="0.8"/>
-        <circle cx="66" cy="4"  r="1.8" fill={T.body} opacity="0.8"/>
-        <line x1="40" y1="-4" x2="37" y2="2" stroke={T.soul} strokeWidth="1" opacity="0.5"/>
-        <line x1="40" y1="-4" x2="43" y2="2" stroke={T.soul} strokeWidth="1" opacity="0.5"/>
-      </>}
+      <defs><filter id="pGlow" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="2.5" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+      <circle cx="40" cy="14" r="12" fill={soul?T.soul:"#D9D4CA"} style={{transition:"fill .35s"}} filter={soul?"url(#pGlow)":undefined}/>
+      <rect x="22" y="30" width="36" height="28" rx="10" fill={body?T.body:"#D9D4CA"} style={{transition:"fill .35s"}} filter={body?"url(#pGlow)":undefined}/>
+      <rect x="2"  y="32" width="18" height="9" rx="4.5" fill={body?T.body:"#D9D4CA"} style={{transition:"fill .35s"}}/>
+      <rect x="60" y="32" width="18" height="9" rx="4.5" fill={body?T.body:"#D9D4CA"} style={{transition:"fill .35s"}}/>
+      <rect x="24" y="60" width="13" height="30" rx="6.5" fill={mind?T.mind:"#D9D4CA"} style={{transition:"fill .35s"}} filter={mind?"url(#pGlow)":undefined}/>
+      <rect x="43" y="60" width="13" height="30" rx="6.5" fill={mind?T.mind:"#D9D4CA"} style={{transition:"fill .35s"}}/>
+      {soul&&<><circle cx="35" cy="13" r="1.8" fill="white" opacity="0.9"/><circle cx="45" cy="13" r="1.8" fill="white" opacity="0.9"/><path d="M34 19 Q40 23 46 19" stroke="white" strokeWidth="1.4" fill="none" strokeLinecap="round"/></>}
+      {all&&<><circle cx="40" cy="-4" r="2.5" fill={T.soul} opacity="0.9"/><circle cx="14" cy="4" r="1.8" fill={T.mind} opacity="0.8"/><circle cx="66" cy="4" r="1.8" fill={T.body} opacity="0.8"/></>}
     </svg>
   );
 }
 
-/* ── Category button ── */
 function CatButton({ meta, active, score, onToggle }) {
   return (
-    <button onClick={onToggle} style={{
-      flex:1, aspectRatio:"1",
-      background:active?meta.color:"#EDE8E0",
-      borderRadius:18, border:"none", cursor:onToggle?"pointer":"default",
-      display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:6,
-      transition:"all .28s cubic-bezier(.34,1.3,.64,1)",
-      transform:active?"translateY(-3px)":"none",
-      boxShadow:active?`0 10px 28px ${meta.color}55`:"none",
-      position:"relative", overflow:"hidden",
-    }}>
-      <div style={{
-        position:"absolute", top:8, right:8,
-        background:active?"rgba(255,255,255,.25)":"rgba(0,0,0,.1)",
-        borderRadius:20, padding:"1px 7px",
-        fontSize:10, fontWeight:700,
-        color:active?"#fff":T.muted,
-      }}>{score} / 7</div>
+    <button onClick={onToggle} style={{flex:1,aspectRatio:"1",background:active?meta.color:"#EDE8E0",borderRadius:18,border:"none",cursor:onToggle?"pointer":"default",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:6,transition:"all .28s cubic-bezier(.34,1.3,.64,1)",transform:active?"translateY(-3px)":"none",boxShadow:active?`0 10px 28px ${meta.color}55`:"none",position:"relative"}}>
+      <div style={{position:"absolute",top:8,right:8,background:active?"rgba(255,255,255,.25)":"rgba(0,0,0,.1)",borderRadius:20,padding:"1px 7px",fontSize:10,fontWeight:700,color:active?"#fff":T.muted}}>{score} / 7</div>
       <span style={{fontSize:30}}>{meta.emoji}</span>
-      <span style={{fontSize:12, fontWeight:700, color:active?"#fff":T.sub}}>{meta.label}</span>
+      <span style={{fontSize:12,fontWeight:700,color:active?"#fff":T.sub}}>{meta.label}</span>
     </button>
   );
 }
 
-/* ── Arc ── */
 function Arc({ score, color, size=44 }) {
-  const r=(size-7)/2, c=size/2, circ=2*Math.PI*r, pct=score/7;
+  const r=(size-7)/2,c=size/2,circ=2*Math.PI*r,pct=score/7;
   return (
     <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
       <circle cx={c} cy={c} r={r} fill="none" stroke={T.border} strokeWidth="4"/>
-      <circle cx={c} cy={c} r={r} fill="none" stroke={color} strokeWidth="4"
-        strokeDasharray={circ} strokeDashoffset={circ*(1-pct)}
-        strokeLinecap="round" transform={`rotate(-90 ${c} ${c})`}
-        style={{transition:"stroke-dashoffset .55s ease"}}/>
-      <text x={c} y={c+1} textAnchor="middle" dominantBaseline="middle"
-        fill={pct>0?color:T.muted} fontSize="12" fontWeight="700">{score}</text>
+      <circle cx={c} cy={c} r={r} fill="none" stroke={color} strokeWidth="4" strokeDasharray={circ} strokeDashoffset={circ*(1-pct)} strokeLinecap="round" transform={`rotate(-90 ${c} ${c})`} style={{transition:"stroke-dashoffset .55s ease"}}/>
+      <text x={c} y={c+1} textAnchor="middle" dominantBaseline="middle" fill={pct>0?color:T.muted} fontSize="12" fontWeight="700">{score}</text>
     </svg>
   );
 }
 
-/* ── Check item ── */
 function CheckItem({ item, checked, color, bg, onToggle, readonly }) {
   return (
-    <button onClick={readonly?undefined:onToggle} style={{
-      display:"flex", alignItems:"center", gap:11,
-      width:"100%", padding:"10px 12px",
-      background:checked?bg:"transparent",
-      border:`1px solid ${checked?color+"50":T.border}`,
-      borderRadius:11, cursor:readonly?"default":"pointer",
-      transition:"all .18s",
-    }}>
-      <div style={{
-        width:19, height:19, borderRadius:5, flexShrink:0,
-        background:checked?color:"transparent",
-        border:`1.8px solid ${checked?color:T.muted}`,
-        display:"flex", alignItems:"center", justifyContent:"center",
-        transition:"all .18s",
-        boxShadow:checked?`0 0 8px ${color}44`:"none",
-      }}>
-        {checked && <svg width="9" height="7" viewBox="0 0 9 7">
-          <path d="M1 3.5L3.2 5.8L8 1" stroke="white" strokeWidth="1.7" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
-        </svg>}
+    <button onClick={readonly?undefined:onToggle} style={{display:"flex",alignItems:"center",gap:11,width:"100%",padding:"10px 12px",background:checked?bg:"transparent",border:`1px solid ${checked?color+"50":T.border}`,borderRadius:11,cursor:readonly?"default":"pointer",transition:"all .18s"}}>
+      <div style={{width:19,height:19,borderRadius:5,flexShrink:0,background:checked?color:"transparent",border:`1.8px solid ${checked?color:T.muted}`,display:"flex",alignItems:"center",justifyContent:"center",transition:"all .18s",boxShadow:checked?`0 0 8px ${color}44`:"none"}}>
+        {checked&&<svg width="9" height="7" viewBox="0 0 9 7"><path d="M1 3.5L3.2 5.8L8 1" stroke="white" strokeWidth="1.7" fill="none" strokeLinecap="round" strokeLinejoin="round"/></svg>}
       </div>
       <span style={{fontSize:11,color:T.muted,flexShrink:0}}>{item.icon}</span>
       <span style={{fontSize:13,color:checked?T.ink:T.sub,fontWeight:checked?600:400,textAlign:"left",transition:"color .18s"}}>{item.label}</span>
@@ -201,54 +148,35 @@ function CheckItem({ item, checked, color, bg, onToggle, readonly }) {
   );
 }
 
-/* ── Mini calendar ── */
 function MiniCalendar({ selected, onSelect }) {
-  const [vy,setVy] = useState(new Date().getFullYear());
-  const [vm,setVm] = useState(new Date().getMonth());
-  const first = new Date(vy,vm,1).getDay();
-  const days  = new Date(vy,vm+1,0).getDate();
-  const today = todayStr();
-
-  const getInfo = d => {
-    const ds = `${vy}-${String(vm+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
-    const data = loadDay(ds);
-    const allItems = [...CHECKLIST.soul,...CHECKLIST.body,...CHECKLIST.mind];
-    const done = allItems.filter(i=>data[i.id]).length;
-    const catDone = ["soul","body","mind"].filter(c=>CHECKLIST[c].some(i=>data[i.id])).length;
-    const catBtnDone = [data.__soulOn,data.__bodyOn,data.__mindOn].filter(Boolean).length;
-    return { ds, done, catDone, catBtnDone };
+  const [vy,setVy]=useState(new Date().getFullYear());
+  const [vm,setVm]=useState(new Date().getMonth());
+  const first=new Date(vy,vm,1).getDay(), days=new Date(vy,vm+1,0).getDate(), today=todayStr();
+  const getInfo=d=>{
+    const ds=`${vy}-${String(vm+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+    const data=loadDay(ds);
+    const done=ALL_ITEMS.filter(i=>data[i.id]).length;
+    const catDone=["soul","body","mind"].filter(c=>CHECKLIST[c].some(i=>data[i.id])).length;
+    const catBtnDone=[data.__soulOn,data.__bodyOn,data.__mindOn].filter(Boolean).length;
+    return {ds,done,catDone,catBtnDone};
   };
-
   return (
     <div style={{background:T.card,borderRadius:20,padding:"16px 14px",border:`1px solid ${T.border}`,boxShadow:"0 2px 12px rgba(0,0,0,.06)"}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
-        <button onClick={()=>{let m=vm-1,y=vy;if(m<0){m=11;y--;}setVm(m);setVy(y);}}
-          style={{background:"none",border:"none",color:T.sub,cursor:"pointer",fontSize:17,padding:"2px 10px"}}>‹</button>
-        <span style={{fontSize:13,fontWeight:700,color:T.ink}}>
-          {new Date(vy,vm).toLocaleDateString("ko-KR",{year:"numeric",month:"long"})}
-        </span>
-        <button onClick={()=>{let m=vm+1,y=vy;if(m>11){m=0;y++;}setVm(m);setVy(y);}}
-          style={{background:"none",border:"none",color:T.sub,cursor:"pointer",fontSize:17,padding:"2px 10px"}}>›</button>
+        <button onClick={()=>{let m=vm-1,y=vy;if(m<0){m=11;y--;}setVm(m);setVy(y);}} style={{background:"none",border:"none",color:T.sub,cursor:"pointer",fontSize:17,padding:"2px 10px"}}>‹</button>
+        <span style={{fontSize:13,fontWeight:700,color:T.ink}}>{new Date(vy,vm).toLocaleDateString("ko-KR",{year:"numeric",month:"long"})}</span>
+        <button onClick={()=>{let m=vm+1,y=vy;if(m>11){m=0;y++;}setVm(m);setVy(y);}} style={{background:"none",border:"none",color:T.sub,cursor:"pointer",fontSize:17,padding:"2px 10px"}}>›</button>
       </div>
       <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:1,marginBottom:4}}>
-        {["일","월","화","수","목","금","토"].map(d=>(
-          <div key={d} style={{textAlign:"center",fontSize:9,color:T.muted,padding:"2px 0"}}>{d}</div>
-        ))}
+        {["일","월","화","수","목","금","토"].map(d=><div key={d} style={{textAlign:"center",fontSize:9,color:T.muted,padding:"2px 0"}}>{d}</div>)}
       </div>
       <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:1}}>
         {Array.from({length:first}).map((_,i)=><div key={`e${i}`}/>)}
         {Array.from({length:days},(_,i)=>i+1).map(d=>{
-          const {ds,done,catDone}=getInfo(d);
-          const isSel=ds===selected, isT=ds===today;
+          const {ds,done,catDone,catBtnDone}=getInfo(d);
+          const isSel=ds===selected,isT=ds===today;
           return (
-            <button key={d} onClick={()=>onSelect(ds)} style={{
-              aspectRatio:"1",display:"flex",flexDirection:"column",
-              alignItems:"center",justifyContent:"center",gap:1.5,
-              borderRadius:8,border:"none",cursor:"pointer",
-              background:isSel?T.soul:isT?`${T.soul}15`:"transparent",
-              outline:isT&&!isSel?`1.5px solid ${T.soul}50`:"none",
-              position:"relative",
-            }}>
+            <button key={d} onClick={()=>onSelect(ds)} style={{aspectRatio:"1",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:1.5,borderRadius:8,border:"none",cursor:"pointer",background:isSel?T.soul:isT?`${T.soul}15`:"transparent",outline:isT&&!isSel?`1.5px solid ${T.soul}50`:"none",position:"relative"}}>
               <span style={{fontSize:11,fontWeight:isSel||isT?700:400,color:isSel?"#fff":isT?T.soul:T.sub}}>{d}</span>
               {!isSel&&done>0&&(
                 <div style={{display:"flex",gap:1.5,alignItems:"center"}}>
@@ -257,15 +185,7 @@ function MiniCalendar({ selected, onSelect }) {
                   {catDone>=3&&<div style={{width:3,height:3,borderRadius:"50%",background:T.mind,opacity:.9}}/>}
                 </div>
               )}
-              {/* 카테고리 버튼 활성화 표시 */}
-              {!isSel&&catBtnDone>0&&(
-                <div style={{
-                  position:"absolute",top:2,right:2,
-                  width:5,height:5,borderRadius:"50%",
-                  background:catBtnDone===3?"#FFD700":T.soul,
-                  boxShadow:catBtnDone===3?"0 0 4px #FFD70088":"none",
-                }}/>
-              )}
+              {!isSel&&catBtnDone>0&&<div style={{position:"absolute",top:2,right:2,width:5,height:5,borderRadius:"50%",background:catBtnDone===3?"#FFD700":T.soul,boxShadow:catBtnDone===3?"0 0 4px #FFD70088":"none"}}/>}
             </button>
           );
         })}
@@ -274,322 +194,161 @@ function MiniCalendar({ selected, onSelect }) {
   );
 }
 
-/* ── Share card ── */
-function ShareCardEl({ dateStr, checks, soulOn, bodyOn, mindOn, ss, bs, ms }) {
-  const date = new Date(dateStr+"T12:00:00").toLocaleDateString("ko-KR",{month:"long",day:"numeric",weekday:"short"});
-  const total = ss+bs+ms;
-  const allOn = soulOn&&bodyOn&&mindOn;
+function ShareCardEl({ dateStr, dayData, soulOn, bodyOn, mindOn, ss, bs, ms }) {
+  const date=new Date(dateStr+"T12:00:00").toLocaleDateString("ko-KR",{month:"long",day:"numeric",weekday:"short"});
+  const total=ss+bs+ms, allOn=soulOn&&bodyOn&&mindOn;
   return (
-    <div style={{
-      width:"100%", padding:"28px 24px",
-      background:"linear-gradient(150deg,#1C1624 0%,#122018 55%,#1C1624 100%)",
-      borderRadius:28, color:"#fff", position:"relative", overflow:"hidden",
-    }}>
-      <div style={{position:"absolute",top:16,right:20,opacity:.07}}>
-        {[0,1,2,3,4].map(r=>(
-          <div key={r} style={{display:"flex",gap:8,marginBottom:8}}>
-            {[0,1,2,3,4].map(c=><div key={c} style={{width:3,height:3,borderRadius:"50%",background:"#fff"}}/>)}
-          </div>
-        ))}
-      </div>
+    <div style={{width:"100%",padding:"28px 24px",background:"linear-gradient(150deg,#1C1624 0%,#122018 55%,#1C1624 100%)",borderRadius:28,color:"#fff",position:"relative",overflow:"hidden"}}>
+      <div style={{position:"absolute",top:16,right:20,opacity:.07}}>{[0,1,2,3,4].map(r=><div key={r} style={{display:"flex",gap:8,marginBottom:8}}>{[0,1,2,3,4].map(c=><div key={c} style={{width:3,height:3,borderRadius:"50%",background:"#fff"}}/>)}</div>)}</div>
       <div style={{fontSize:9,letterSpacing:".2em",color:"rgba(255,255,255,.4)",marginBottom:4}}>WHOLENESS · 영육강건</div>
       <div style={{fontSize:21,fontWeight:800,letterSpacing:"-.02em",marginBottom:2}}>{date}</div>
-      {allOn
-        ? <div style={{fontSize:12,color:"rgba(255,255,255,.5)",marginBottom:20,fontStyle:"italic"}}>🎉 오늘 하루 온전합니다!</div>
-        : <div style={{fontSize:12,color:"rgba(255,255,255,.4)",marginBottom:20}}>{total} / 21점 · 오늘도 한 걸음씩</div>
-      }
+      {allOn?<div style={{fontSize:12,color:"rgba(255,255,255,.5)",marginBottom:20,fontStyle:"italic"}}>🎉 오늘 하루 온전합니다!</div>:<div style={{fontSize:12,color:"rgba(255,255,255,.4)",marginBottom:20}}>{total} / 21점 · 오늘도 한 걸음씩</div>}
       <div style={{display:"flex",gap:8,marginBottom:18}}>
         {[["soul","영혼",T.soul,soulOn,ss],["body","신체",T.body,bodyOn,bs],["mind","마음",T.mind,mindOn,ms]].map(([cat,lbl,col,on,s])=>(
-          <div key={cat} style={{
-            flex:1,background:on?"rgba(255,255,255,.12)":"rgba(255,255,255,.05)",
-            borderRadius:14,padding:"12px 8px",textAlign:"center",
-            border:`1px solid ${on?col+"50":"rgba(255,255,255,.08)"}`,
-          }}>
+          <div key={cat} style={{flex:1,background:on?"rgba(255,255,255,.12)":"rgba(255,255,255,.05)",borderRadius:14,padding:"12px 8px",textAlign:"center",border:`1px solid ${on?col+"50":"rgba(255,255,255,.08)"}`}}>
             <div style={{fontSize:22,fontWeight:900,color:on?col:"rgba(255,255,255,.3)",lineHeight:1}}>{s}</div>
             <div style={{fontSize:9,color:"rgba(255,255,255,.45)",marginTop:3}}>{lbl} / 7</div>
           </div>
         ))}
       </div>
-      <div style={{display:"flex",flexWrap:"wrap",gap:4,marginBottom:16}}>
-        {[...CHECKLIST.soul,...CHECKLIST.body,...CHECKLIST.mind].filter(i=>checks[i.id]).map(i=>(
-          <span key={i.id} style={{fontSize:9,padding:"3px 8px",background:"rgba(255,255,255,.09)",borderRadius:20,color:"rgba(255,255,255,.55)"}}>{i.icon} {i.label}</span>
-        ))}
-      </div>
+      <div style={{display:"flex",flexWrap:"wrap",gap:4,marginBottom:16}}>{ALL_ITEMS.filter(i=>dayData[i.id]).map(i=><span key={i.id} style={{fontSize:9,padding:"3px 8px",background:"rgba(255,255,255,.09)",borderRadius:20,color:"rgba(255,255,255,.55)"}}>{i.icon} {i.label}</span>)}</div>
       <div style={{fontSize:9,color:"rgba(255,255,255,.2)",textAlign:"right"}}>#영육강건 #wholeness #온전한하루 #하루결</div>
     </div>
   );
 }
 
-/* ── API Key Section (백업 탭용) ── */
 function ApiKeySection() {
-  const [key, setKey] = React.useState(localStorage.getItem("whl_apikey")||"");
-  const [saved, setSaved] = React.useState(false);
-  const save = () => {
-    if(!key.trim()){localStorage.removeItem("whl_apikey");}
-    else{localStorage.setItem("whl_apikey", key.trim());}
-    setSaved(true);
-    setTimeout(()=>setSaved(false), 2000);
-  };
-  const T2 = {soul:"#7C6FF7",soulBg:"#EFEEFF",border:"#E8E3DA",ink:"#1A1A1A",sub:"#6B6B6B",muted:"#ABABAB",card:"#FFFFFF"};
+  const [key,setKey]=useState(localStorage.getItem("whl_apikey")||"");
+  const [saved,setSaved]=useState(false);
+  const save=()=>{ key.trim()?localStorage.setItem("whl_apikey",key.trim()):localStorage.removeItem("whl_apikey"); setSaved(true); setTimeout(()=>setSaved(false),2000); };
   return (
-    <div style={{background:T2.card,borderRadius:20,padding:"20px 18px",border:`1px solid ${T2.border}`,boxShadow:"0 1px 8px rgba(0,0,0,.04)"}}>
-      <div style={{fontSize:10,letterSpacing:".14em",color:T2.muted,marginBottom:12}}>⚙️ AI 식단 생성 설정</div>
-      <div style={{fontSize:12,color:T2.sub,lineHeight:1.7,marginBottom:12}}>
-        Anthropic API 키를 저장하면 AI 식단 플래너를 사용할 수 있어요.<br/>
-        키는 이 기기 로컬에만 저장돼요.
-      </div>
+    <div style={{background:T.card,borderRadius:20,padding:"20px 18px",border:`1px solid ${T.border}`,boxShadow:"0 1px 8px rgba(0,0,0,.04)"}}>
+      <div style={{fontSize:10,letterSpacing:".14em",color:T.muted,marginBottom:12}}>⚙️ AI 식단 생성 설정</div>
+      <div style={{fontSize:12,color:T.sub,lineHeight:1.7,marginBottom:12}}>Anthropic API 키를 저장하면 AI 식단 플래너를 사용할 수 있어요.<br/>키는 이 기기 로컬에만 저장돼요.</div>
       <div style={{display:"flex",gap:8,marginBottom:8}}>
-        <input
-          type="password"
-          value={key}
-          onChange={e=>setKey(e.target.value)}
-          onKeyDown={e=>e.key==="Enter"&&save()}
-          placeholder="sk-ant-api03-..."
-          style={{
-            flex:1,padding:"10px 12px",borderRadius:10,
-            border:`1px solid ${T2.border}`,background:"#FAFAF7",
-            fontSize:12,fontFamily:"Pretendard,sans-serif",
-            color:T2.ink,outline:"none",
-          }}
-        />
-        <button onClick={save} style={{
-          padding:"10px 16px",background:T2.soul,color:"#fff",
-          border:"none",borderRadius:10,fontSize:12,fontWeight:700,
-          cursor:"pointer",fontFamily:"Pretendard,sans-serif",whiteSpace:"nowrap",
-          boxShadow:`0 3px 10px ${T2.soul}44`,
-        }}>{saved?"✓ 저장됨":"저장"}</button>
+        <input type="password" value={key} onChange={e=>setKey(e.target.value)} onKeyDown={e=>e.key==="Enter"&&save()} placeholder="sk-ant-api03-..." style={{flex:1,padding:"10px 12px",borderRadius:10,border:`1px solid ${T.border}`,background:T.surface,fontSize:12,fontFamily:"Pretendard,sans-serif",color:T.ink,outline:"none"}}/>
+        <button onClick={save} style={{padding:"10px 16px",background:T.soul,color:"#fff",border:"none",borderRadius:10,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"Pretendard,sans-serif",whiteSpace:"nowrap",boxShadow:`0 3px 10px ${T.soul}44`}}>{saved?"✓ 저장됨":"저장"}</button>
       </div>
-      <div style={{fontSize:10,color:T2.muted}}>
-        API 키 발급 → <a href="https://console.anthropic.com" target="_blank" style={{color:T2.soul,fontWeight:600}}>console.anthropic.com</a>
-      </div>
+      <div style={{fontSize:10,color:T.muted}}>API 키 발급 → <a href="https://console.anthropic.com" target="_blank" style={{color:T.soul,fontWeight:600}}>console.anthropic.com</a></div>
     </div>
   );
 }
 
-/* ── API Key Banner ── */
-function ApiKeyBanner() {
-  const [key, setKey] = React.useState("");
-  const [saved, setSaved] = React.useState(false);
-  const save = () => {
-    if(!key.trim())return;
-    localStorage.setItem("whl_apikey", key.trim());
-    setSaved(true);
-    setTimeout(()=>window.location.reload(), 800);
-  };
-  return (
-    <div style={{background:"#FEF9EE",borderRadius:16,padding:"14px 16px",border:"1px solid #F5C842"}}>
-      <div style={{fontSize:11,fontWeight:700,color:"#92700A",marginBottom:6}}>⚙️ AI 식단 생성 — API 키 필요</div>
-      <div style={{fontSize:11,color:"#7A6010",lineHeight:1.6,marginBottom:10}}>
-        Anthropic API 키를 입력하면 AI 식단 생성을 사용할 수 있어요.<br/>
-        키는 이 기기에만 저장되며 외부로 전송되지 않아요.
-      </div>
-      <div style={{display:"flex",gap:8}}>
-        <input
-          type="password"
-          value={key}
-          onChange={e=>setKey(e.target.value)}
-          onKeyDown={e=>e.key==="Enter"&&save()}
-          placeholder="sk-ant-api03-..."
-          style={{
-            flex:1,padding:"9px 12px",borderRadius:10,
-            border:"1px solid #E5C84A",background:"#FFFDF0",
-            fontSize:12,fontFamily:"Pretendard,sans-serif",
-            color:"#1A1A1A",outline:"none",
-          }}
-        />
-        <button onClick={save} style={{
-          padding:"9px 14px",background:"#92700A",color:"#fff",
-          border:"none",borderRadius:10,fontSize:12,fontWeight:700,cursor:"pointer",
-          fontFamily:"Pretendard,sans-serif",whiteSpace:"nowrap",
-        }}>{saved?"✓ 저장됨":"저장"}</button>
-      </div>
-      <div style={{fontSize:10,color:"#A08020",marginTop:8}}>
-        · API 키: <a href="https://console.anthropic.com" target="_blank" style={{color:"#92700A"}}>console.anthropic.com</a> 에서 발급
-      </div>
-    </div>
-  );
-}
-
-/* ══════════════════════════════════════════════ */
+/* ══════════════ APP ══════════════ */
 function App() {
-  const [tab,setTab]         = useState("today");
-  const [selDate,setSelDate] = useState(todayStr());
-  const [showCal,setShowCal] = useState(false);
-  const [checks,setChecks]   = useState({});
+  const [tab,setTab]           = useState("today");
+  const [selDate,setSelDate]   = useState(todayStr());
+  const [showCal,setShowCal]   = useState(false);
+  // ★ 핵심: 날짜별 모든 데이터를 dayData 하나로 관리
+  const [dayData,setDayData]   = useState(()=>loadDay(todayStr()));
   const [showShare,setShowShare] = useState(false);
-  const [saving,setSaving]   = useState(false);
-  const [saveMsg,setSaveMsg] = useState("");
-
-  const [soulOn,setSoulOn] = useState(false);
-  const [bodyOn,setBodyOn] = useState(false);
-  const [mindOn,setMindOn] = useState(false);
-
+  const [saving,setSaving]     = useState(false);
+  const [saveMsg,setSaveMsg]   = useState("");
   const [missionDone,setMissionDone] = useState(false);
   const [showReward,setShowReward]   = useState(false);
-
   const [ingredients,setIngredients] = useState("");
-  const [backupMsg,setBackupMsg] = useState("");
-  const [restoreMsg,setRestoreMsg] = useState("");
-  const fileInputRef = useRef(null);
-  const [mealPlan,setMealPlan] = useState(()=>{
-    try{ const s=localStorage.getItem("whl_mealplan"); return s?JSON.parse(s):null; }catch{return null;}
-  });
+  const [mealPlan,setMealPlan] = useState(()=>{ try{const s=localStorage.getItem("whl_mealplan");return s?JSON.parse(s):null;}catch{return null;} });
   const [loadingMeal,setLoadingMeal] = useState(false);
   const [mealError,setMealError]     = useState("");
+  const [backupMsg,setBackupMsg]     = useState("");
+  const [restoreMsg,setRestoreMsg]   = useState("");
+  const shareRef    = useRef(null);
+  const fileInputRef = useRef(null);
 
-  const shareRef = useRef(null);
   const isToday  = selDate===todayStr();
   const readonly = !isToday;
   const mission  = MISSIONS[new Date().getDay()];
+  const insight  = INSIGHTS[new Date().getDay()];
+  const dateLabel = isToday?"오늘":new Date(selDate+"T12:00:00").toLocaleDateString("ko-KR",{month:"long",day:"numeric",weekday:"short"});
 
+  // ★ 날짜 바뀌면 해당 날 데이터 로드
   useEffect(()=>{
-    const data = loadDay(selDate);
-    setChecks({...data});
-    setSoulOn(!!data.__soulOn);
-    setBodyOn(!!data.__bodyOn);
-    setMindOn(!!data.__mindOn);
+    setDayData(loadDay(selDate));
     setShowShare(false);
-    setShowCal(false);
   },[selDate]);
 
-  const isLoadedRef = React.useRef(false);
+  // ★ dayData 바뀌면 저장 (오늘만)
   useEffect(()=>{
-    // selDate 변경 직후엔 저장 스킵 (로드 effect가 먼저 실행되도록)
-    isLoadedRef.current = false;
-  },[selDate]);
-  useEffect(()=>{
-    if(!isLoadedRef.current){ isLoadedRef.current=true; return; }
-    saveDay(selDate,{...checks,__soulOn:soulOn,__bodyOn:bodyOn,__mindOn:mindOn});
-  },[checks,soulOn,bodyOn,mindOn]);
+    if(!readonly) saveDay(selDate,dayData);
+  },[dayData]);
 
-  const toggle = useCallback(id=>{
-    if(readonly)return;
-    setChecks(p=>({...p,[id]:!p[id]}));
-  },[readonly]);
+  // ★ 편의 접근자 — checks/soulOn 등은 dayData에서 직접 파생
+  const soulOn = !!dayData.__soulOn;
+  const bodyOn = !!dayData.__bodyOn;
+  const mindOn = !!dayData.__mindOn;
+  const setSoulOn = v => !readonly && setDayData(p=>({...p,__soulOn:!!v}));
+  const setBodyOn = v => !readonly && setDayData(p=>({...p,__bodyOn:!!v}));
+  const setMindOn = v => !readonly && setDayData(p=>({...p,__mindOn:!!v}));
+  const toggle    = id => !readonly && setDayData(p=>({...p,[id]:!p[id]}));
 
-  const score = cat => CHECKLIST[cat].filter(i=>checks[i.id]).length;
+  const score = cat => CHECKLIST[cat].filter(i=>dayData[i.id]).length;
   const ss=score("soul"), bs=score("body"), ms=score("mind");
-  const allOn=soulOn&&bodyOn&&mindOn;
-  const anyOn=soulOn||bodyOn||mindOn;
-  const dateLabel=isToday?"오늘":new Date(selDate+"T12:00:00").toLocaleDateString("ko-KR",{month:"long",day:"numeric",weekday:"short"});
+  const allOn=soulOn&&bodyOn&&mindOn, anyOn=soulOn||bodyOn||mindOn;
 
   const saveImage = async () => {
-    if(!shareRef.current)return;
-    setSaving(true);
+    if(!shareRef.current)return; setSaving(true);
     try {
-      // Load html2canvas dynamically
-      if(!window.html2canvas){
-        await new Promise((res,rej)=>{
-          const s=document.createElement("script");
-          s.src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js";
-          s.onload=res; s.onerror=rej;
-          document.head.appendChild(s);
-        });
-      }
-      const canvas = await window.html2canvas(shareRef.current,{scale:3,useCORS:true,backgroundColor:null,logging:false});
-      const url=canvas.toDataURL("image/png");
-      const a=document.createElement("a");
-      a.href=url; a.download=`wholeness_${selDate}.png`; a.click();
+      if(!window.html2canvas){ await new Promise((res,rej)=>{ const s=document.createElement("script"); s.src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"; s.onload=res; s.onerror=rej; document.head.appendChild(s); }); }
+      const canvas=await window.html2canvas(shareRef.current,{scale:3,useCORS:true,backgroundColor:null,logging:false});
+      const url=canvas.toDataURL("image/png"); const a=document.createElement("a"); a.href=url; a.download=`wholeness_${selDate}.png`; a.click();
       setSaveMsg("✓ 저장 완료! 갤러리에서 확인하세요.");
-      setTimeout(()=>setSaveMsg(""),3500);
-    } catch(e){
-      setSaveMsg("이미지를 길게 눌러 저장하세요.");
-      setTimeout(()=>setSaveMsg(""),4000);
-    }
-    setSaving(false);
+    } catch{ setSaveMsg("이미지를 길게 눌러 저장하세요."); }
+    setSaving(false); setTimeout(()=>setSaveMsg(""),3500);
   };
 
-  /* ── 백업 ── */
   const exportBackup = () => {
-    const allKeys = Object.keys(localStorage).filter(k=>k.startsWith("whl_"));
-    const data = {};
-    allKeys.forEach(k=>{ data[k]=localStorage.getItem(k); });
-    const json = JSON.stringify({version:1, exportedAt:new Date().toISOString(), records:data}, null, 2);
-    const blob = new Blob([json],{type:"application/json"});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href=url; a.download=`wholeness_backup_${todayStr()}.json`; a.click();
-    URL.revokeObjectURL(url);
-    setBackupMsg("✓ 백업 파일이 저장됐어요!");
-    setTimeout(()=>setBackupMsg(""),3000);
+    const data={}; Object.keys(localStorage).filter(k=>k.startsWith("whl_")).forEach(k=>{data[k]=localStorage.getItem(k);});
+    const blob=new Blob([JSON.stringify({version:1,exportedAt:new Date().toISOString(),records:data},null,2)],{type:"application/json"});
+    const url=URL.createObjectURL(blob); const a=document.createElement("a"); a.href=url; a.download=`wholeness_backup_${todayStr()}.json`; a.click(); URL.revokeObjectURL(url);
+    setBackupMsg("✓ 백업 파일이 저장됐어요!"); setTimeout(()=>setBackupMsg(""),3000);
   };
 
   const exportEmail = () => {
-    const allKeys = Object.keys(localStorage).filter(k=>k.startsWith("whl_"));
-    const data = {};
-    allKeys.forEach(k=>{ data[k]=localStorage.getItem(k); });
-    const json = JSON.stringify({version:1, exportedAt:new Date().toISOString(), records:data});
-    const subject = encodeURIComponent("온전한 하루 백업 데이터");
-    const body = encodeURIComponent("아래 JSON을 복사해서 복구 시 사용하세요.\n\n" + json);
-    window.open(`mailto:?subject=${subject}&body=${body}`);
+    const data={}; Object.keys(localStorage).filter(k=>k.startsWith("whl_")).forEach(k=>{data[k]=localStorage.getItem(k);});
+    window.open(`mailto:?subject=${encodeURIComponent("온전한 하루 백업 데이터")}&body=${encodeURIComponent("아래 JSON을 복사해서 복구 시 사용하세요.\n\n"+JSON.stringify({version:1,exportedAt:new Date().toISOString(),records:data}))}`);
   };
 
-  const importBackup = (e) => {
-    const file = e.target.files[0];
-    if(!file)return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
+  const importBackup = e => {
+    const file=e.target.files[0]; if(!file)return;
+    new FileReader().onload=ev=>{
       try {
-        const parsed = JSON.parse(ev.target.result);
-        const records = parsed.records || parsed;
-        let count = 0;
-        Object.entries(records).forEach(([k,v])=>{
-          if(k.startsWith("whl_")){ localStorage.setItem(k,v); count++; }
-        });
-        const today = todayStr();
-        const dayData = loadDay(today);
-        setChecks(dayData);
-        setSoulOn(!!dayData.__soulOn);
-        setBodyOn(!!dayData.__bodyOn);
-        setMindOn(!!dayData.__mindOn);
-        setSelDate(today);
+        const records=(JSON.parse(ev.target.result).records)||JSON.parse(ev.target.result);
+        let count=0; Object.entries(records).forEach(([k,v])=>{ if(k.startsWith("whl_")){localStorage.setItem(k,v);count++;} });
+        const t=todayStr(); setSelDate(t); setDayData(loadDay(t));
         setRestoreMsg(`✓ ${count}일치 기록이 복구됐어요!`);
-        setTimeout(()=>setRestoreMsg(""),5000);
-      } catch {
-        setRestoreMsg("파일 형식이 올바르지 않아요. 백업 파일을 확인해주세요.");
-        setTimeout(()=>setRestoreMsg(""),4000);
-      }
-    };
-    reader.readAsText(file);
-    e.target.value="";
+      } catch{ setRestoreMsg("파일 형식이 올바르지 않아요."); }
+      setTimeout(()=>setRestoreMsg(""),5000);
+    }; (new FileReader()).onload; // placeholder - use below
+    const reader=new FileReader(); reader.onload=ev=>{
+      try {
+        const parsed=JSON.parse(ev.target.result);
+        const records=parsed.records||parsed;
+        let count=0; Object.entries(records).forEach(([k,v])=>{ if(k.startsWith("whl_")){localStorage.setItem(k,v);count++;} });
+        const t=todayStr(); setSelDate(t); setDayData(loadDay(t));
+        setRestoreMsg(`✓ ${count}일치 기록이 복구됐어요!`);
+      } catch{ setRestoreMsg("파일 형식이 올바르지 않아요."); }
+      setTimeout(()=>setRestoreMsg(""),5000);
+    }; reader.readAsText(file); e.target.value="";
   };
 
   const generateMeals = async () => {
     if(!ingredients.trim()){setMealError("냉장고 재료를 입력해주세요.");return;}
-    const apiKey = localStorage.getItem("whl_apikey")||"";
-    if(!apiKey){
-      setMealError("⚙️ 백업·복구 탭 하단에서 API 키를 먼저 저장해주세요.");
-      return;
-    }
+    const apiKey=localStorage.getItem("whl_apikey")||"";
+    if(!apiKey){setMealError("백업·복구 탭 하단에서 API 키를 먼저 저장해주세요.");return;}
     setLoadingMeal(true); setMealError(""); setMealPlan(null);
     try {
-      const res = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-api-key": apiKey,
-          "anthropic-version": "2023-06-01",
-          "anthropic-dangerous-direct-browser-access": "true",
-        },
-        body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
-          max_tokens: 1200,
-          system: `당신은 건강한 한식 식단 전문가입니다. JSON만 반환하세요. 다른 텍스트 없이 JSON만. 형식: {"plan":[{"day":"월","breakfast":{"menu":"아침메뉴","tip":"간단한 조리팁"},"snack":{"menu":"간식메뉴","tip":"간식팁"},"lunch":{"menu":"도시락메뉴","ingredients":["재료1","재료2"],"tip":"조리팁","kcal":"약 N kcal"}},...]} 7개 요일(월화수목금토일) 전부. 아침은 5분 내 준비 가능한 초간단 메뉴, 간식은 건강하고 가볍게, 점심 도시락은 영양 균형 있게.`,
-          messages: [{role:"user", content:`냉장고: ${ingredients}
-
-일주일 건강 도시락 플랜`}],
-        }),
+      const res=await fetch("https://api.anthropic.com/v1/messages",{
+        method:"POST",
+        headers:{"Content-Type":"application/json","x-api-key":apiKey,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
+        body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1400,
+          system:`건강한 한식 식단 전문가. JSON만 반환. 형식: {"plan":[{"day":"월","breakfast":{"menu":"아침메뉴","tip":"팁"},"snack":{"menu":"간식메뉴","tip":"팁"},"lunch":{"menu":"점심메뉴","ingredients":["재료1","재료2"],"tip":"팁","kcal":"약 N kcal"}},...]} 7개 요일 전부. 아침은 5분 내 초간단, 간식은 건강하고 가볍게, 점심은 도시락으로 영양 균형.`,
+          messages:[{role:"user",content:`냉장고 재료: ${ingredients}\n\n일주일 아침·간식·점심 식단 플랜`}]}),
       });
-      if(!res.ok){
-        const err = await res.json().catch(()=>({}));
-        throw new Error(err?.error?.message || `HTTP ${res.status}`);
-      }
-      const data = await res.json();
-      const text = data.content.map(i=>i.text||"").join("");
-      setMealPlan(JSON.parse(text.replace(/```json|```/g,"").trim()).plan);
-    } catch(e){
-      setMealError("생성 실패: " + e.message);
-    }
+      if(!res.ok){const err=await res.json().catch(()=>({}));throw new Error(err?.error?.message||`HTTP ${res.status}`);}
+      const d=await res.json(); const text=d.content.map(i=>i.text||"").join("");
+      const plan=JSON.parse(text.replace(/```json|```/g,"").trim()).plan;
+      setMealPlan(plan); localStorage.setItem("whl_mealplan",JSON.stringify(plan));
+    } catch(e){setMealError("생성 실패: "+e.message);}
     setLoadingMeal(false);
   };
 
@@ -601,195 +360,93 @@ function App() {
         <div style={{fontSize:10,letterSpacing:".18em",color:T.muted,marginBottom:4}}>WHOLENESS · 영육강건</div>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-end"}}>
           <h1 style={{fontSize:28,fontWeight:800,letterSpacing:"-.03em",lineHeight:1.1}}>온전한 하루</h1>
-          <button onClick={()=>setShowCal(s=>!s)} style={{
-            background:showCal?`${T.soul}15`:T.card,
-            border:`1px solid ${showCal?T.soul+"70":T.border}`,
-            borderRadius:10,padding:"7px 12px",cursor:"pointer",
-            color:showCal?T.soul:T.sub,fontSize:12,fontWeight:600,
-            display:"flex",alignItems:"center",gap:6,
-            boxShadow:"0 1px 4px rgba(0,0,0,.06)",transition:"all .2s",
-          }}>
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-              <rect x="1" y="2" width="10" height="9" rx="2" stroke="currentColor" strokeWidth="1.2"/>
-              <path d="M4 1v2M8 1v2" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
-              <path d="M1 5h10" stroke="currentColor" strokeWidth="1.2"/>
-            </svg>
+          <button onClick={()=>setShowCal(s=>!s)} style={{background:showCal?`${T.soul}15`:T.card,border:`1px solid ${showCal?T.soul+"70":T.border}`,borderRadius:10,padding:"7px 12px",cursor:"pointer",color:showCal?T.soul:T.sub,fontSize:12,fontWeight:600,display:"flex",alignItems:"center",gap:6,boxShadow:"0 1px 4px rgba(0,0,0,.06)",transition:"all .2s"}}>
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><rect x="1" y="2" width="10" height="9" rx="2" stroke="currentColor" strokeWidth="1.2"/><path d="M4 1v2M8 1v2" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/><path d="M1 5h10" stroke="currentColor" strokeWidth="1.2"/></svg>
             {dateLabel}
           </button>
         </div>
         {readonly&&<div style={{marginTop:7,fontSize:11,color:T.mind,fontWeight:600}}>📅 과거 기록 보기 — 수정 불가</div>}
       </div>
 
-      {showCal&&(
-        <div style={{padding:"14px 20px 0"}}>
-          <MiniCalendar selected={selDate} onSelect={d=>{setSelDate(d);setShowCal(false);}}/>
-        </div>
-      )}
+      {showCal&&<div style={{padding:"14px 24px 0"}}><MiniCalendar selected={selDate} onSelect={d=>{setSelDate(d);setShowCal(false);}}/></div>}
 
       {/* Tabs */}
       <div style={{display:"flex",gap:2,margin:"18px 24px 0",background:"#EDE8DE",borderRadius:14,padding:4}}>
         {[["today","기록"],["dopamine","도파민 리셋"],["meal","식단 플래너"],["backup","백업·복구"]].map(([k,l])=>(
-          <button key={k} onClick={()=>setTab(k)} style={{
-            flex:1,padding:"9px 4px",borderRadius:11,border:"none",cursor:"pointer",
-            background:tab===k?T.card:"transparent",
-            color:tab===k?T.ink:T.muted,
-            fontWeight:tab===k?700:400,fontSize:12,
-            boxShadow:tab===k?"0 1px 6px rgba(0,0,0,.08)":"none",
-            transition:"all .2s",
-          }}>{l}</button>
+          <button key={k} onClick={()=>setTab(k)} style={{flex:1,padding:"9px 4px",borderRadius:11,border:"none",cursor:"pointer",background:tab===k?T.card:"transparent",color:tab===k?T.ink:T.muted,fontWeight:tab===k?700:400,fontSize:12,boxShadow:tab===k?"0 1px 6px rgba(0,0,0,.08)":"none",transition:"all .2s"}}>{l}</button>
         ))}
       </div>
 
-      {/* ═══ TAB: TODAY ═══ */}
+      {/* ══ TODAY ══ */}
       {tab==="today"&&(
         <div style={{padding:"16px 24px 0",display:"flex",flexDirection:"column",gap:14}}>
-
-          {/* Hero card */}
-          <div style={{
-            background:T.card,borderRadius:24,padding:"24px 18px 20px",
-            border:`1px solid ${allOn?T.soul+"60":T.border}`,
-            boxShadow:allOn?"0 0 0 2px rgba(124,111,247,.15),0 4px 24px rgba(0,0,0,.07)":"0 2px 16px rgba(0,0,0,.05)",
-            transition:"border-color .4s,box-shadow .4s",
-          }}>
+          <div style={{background:T.card,borderRadius:24,padding:"24px 18px 20px",border:`1px solid ${allOn?T.soul+"60":T.border}`,boxShadow:allOn?"0 0 0 2px rgba(124,111,247,.15),0 4px 24px rgba(0,0,0,.07)":"0 2px 16px rgba(0,0,0,.05)",transition:"border-color .4s,box-shadow .4s"}}>
             <div style={{display:"flex",alignItems:"center",marginBottom:18}}>
-              {/* 사람 아이콘 — 좌측 공간의 중앙에 위치 */}
               <div style={{width:"40%",display:"flex",justifyContent:"center",flexShrink:0}}>
                 <PersonIcon soul={soulOn} body={bodyOn} mind={mindOn}/>
               </div>
-              {/* 점수 영역 */}
               <div style={{flex:1}}>
-                <div style={{fontSize:38,fontWeight:900,letterSpacing:"-.04em",lineHeight:1,color:T.ink}}>
-                  {ss+bs+ms}<span style={{fontSize:14,color:T.muted,fontWeight:400,marginLeft:3}}> / 21</span>
-                </div>
+                <div style={{fontSize:38,fontWeight:900,letterSpacing:"-.04em",lineHeight:1,color:T.ink}}>{ss+bs+ms}<span style={{fontSize:14,color:T.muted,fontWeight:400,marginLeft:3}}> / 21</span></div>
                 <div style={{fontSize:11,color:T.muted,marginBottom:10}}>체크리스트 점수</div>
                 <div style={{display:"flex",gap:8}}>
                   {[["soul",ss],["body",bs],["mind",ms]].map(([cat,s])=>(
-                    <div key={cat} style={{textAlign:"center"}}>
-                      <Arc score={s} color={CAT[cat].color}/>
-                      <div style={{fontSize:9,color:T.muted,marginTop:2}}>{CAT[cat].label}</div>
-                    </div>
+                    <div key={cat} style={{textAlign:"center"}}><Arc score={s} color={CAT[cat].color}/><div style={{fontSize:9,color:T.muted,marginTop:2}}>{CAT[cat].label}</div></div>
                   ))}
                 </div>
-
               </div>
             </div>
-
             <div style={{display:"flex",gap:10}}>
-              <CatButton meta={CAT.soul} active={soulOn} score={ss} onToggle={readonly?undefined:()=>setSoulOn(s=>!s)}/>
-              <CatButton meta={CAT.body} active={bodyOn} score={bs} onToggle={readonly?undefined:()=>setBodyOn(s=>!s)}/>
-              <CatButton meta={CAT.mind} active={mindOn} score={ms} onToggle={readonly?undefined:()=>setMindOn(s=>!s)}/>
+              <CatButton meta={CAT.soul} active={soulOn} score={ss} onToggle={readonly?undefined:()=>setSoulOn(!soulOn)}/>
+              <CatButton meta={CAT.body} active={bodyOn} score={bs} onToggle={readonly?undefined:()=>setBodyOn(!bodyOn)}/>
+              <CatButton meta={CAT.mind} active={mindOn} score={ms} onToggle={readonly?undefined:()=>setMindOn(!mindOn)}/>
             </div>
             <div style={{textAlign:"center",marginTop:10}}>
-              {allOn
-                ? <span className="popIn" style={{fontSize:13,fontWeight:700,color:T.soul}}>🎉 오늘 하루 온전합니다!</span>
-                : !readonly && <span style={{fontSize:10,color:T.muted}}>탭해서 오늘의 카테고리를 활성화하세요</span>
-              }
+              {allOn?<span className="popIn" style={{fontSize:13,fontWeight:700,color:T.soul}}>🎉 오늘 하루 온전합니다!</span>:!readonly&&<span style={{fontSize:10,color:T.muted}}>탭해서 오늘의 카테고리를 활성화하세요</span>}
             </div>
           </div>
 
-          {/* Checklists */}
           {Object.entries(CAT).map(([cat,meta])=>{
             const s=cat==="soul"?ss:cat==="body"?bs:ms;
             return (
               <div key={cat} style={{background:T.card,borderRadius:20,overflow:"hidden",border:`1px solid ${T.border}`,boxShadow:"0 1px 8px rgba(0,0,0,.04)"}}>
-                <div style={{
-                  display:"flex",alignItems:"center",justifyContent:"space-between",
-                  padding:"13px 16px 11px",
-                  borderBottom:`1px solid ${T.border}`,
-                  background:`linear-gradient(90deg,${meta.bg} 0%,transparent 80%)`,
-                }}>
-                  <div style={{display:"flex",alignItems:"center",gap:8}}>
-                    <div style={{width:7,height:7,borderRadius:"50%",background:meta.color}}/>
-                    <span style={{fontSize:13,fontWeight:800,color:meta.color,letterSpacing:".04em"}}>{meta.label}</span>
-                  </div>
+                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px 11px",borderBottom:`1px solid ${T.border}`,background:`linear-gradient(90deg,${meta.bg} 0%,transparent 80%)`}}>
+                  <div style={{display:"flex",alignItems:"center",gap:8}}><div style={{width:7,height:7,borderRadius:"50%",background:meta.color}}/><span style={{fontSize:13,fontWeight:800,color:meta.color,letterSpacing:".04em"}}>{meta.label}</span></div>
                   <span style={{fontSize:12,fontWeight:700,color:meta.color}}>{s}&thinsp;/&thinsp;7</span>
                 </div>
                 <div style={{padding:"10px 12px",display:"flex",flexDirection:"column",gap:5}}>
-                  {CHECKLIST[cat].map(item=>(
-                    <CheckItem key={item.id} item={item} checked={!!checks[item.id]}
-                      color={meta.color} bg={meta.bg}
-                      onToggle={()=>toggle(item.id)} readonly={readonly}/>
-                  ))}
+                  {CHECKLIST[cat].map(item=><CheckItem key={item.id} item={item} checked={!!dayData[item.id]} color={meta.color} bg={meta.bg} onToggle={()=>toggle(item.id)} readonly={readonly}/>)}
                 </div>
               </div>
             );
           })}
 
-          {/* Share */}
-          {isToday&&(
-            <>
-              <button onClick={()=>setShowShare(s=>!s)} style={{
-                background:allOn?`linear-gradient(135deg,${T.soul},${T.body})`:anyOn?T.soul:T.card,
-                border:`1px solid ${anyOn?T.soul:T.border}`,
-                borderRadius:16,padding:"14px",
-                fontSize:13,fontWeight:700,cursor:"pointer",
-                color:anyOn?"#fff":T.muted,
-                display:"flex",alignItems:"center",justifyContent:"center",gap:8,
-                boxShadow:allOn?`0 6px 24px ${T.soul}44`:anyOn?`0 3px 12px ${T.soul}30`:"none",
-                transition:"all .3s ease",
-              }}>
-                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                  <circle cx="11" cy="2.5" r="1.5" stroke="currentColor" strokeWidth="1.2"/>
-                  <circle cx="11" cy="11.5" r="1.5" stroke="currentColor" strokeWidth="1.2"/>
-                  <circle cx="3" cy="7" r="1.5" stroke="currentColor" strokeWidth="1.2"/>
-                  <path d="M4.3 6.2L9.7 3.3M4.3 7.8L9.7 10.7" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
-                </svg>
-                {showShare?"카드 닫기":"인스타 공유 카드"}
-                {!anyOn&&<span style={{fontSize:10,opacity:.6}}>· 카테고리 활성화 후 이용</span>}
+          {isToday&&<>
+            <button onClick={()=>setShowShare(s=>!s)} style={{background:allOn?`linear-gradient(135deg,${T.soul},${T.body})`:anyOn?T.soul:T.card,border:`1px solid ${anyOn?T.soul:T.border}`,borderRadius:16,padding:"14px",fontSize:13,fontWeight:700,cursor:"pointer",color:anyOn?"#fff":T.muted,display:"flex",alignItems:"center",justifyContent:"center",gap:8,boxShadow:allOn?`0 6px 24px ${T.soul}44`:anyOn?`0 3px 12px ${T.soul}30`:"none",transition:"all .3s"}}>
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="11" cy="2.5" r="1.5" stroke="currentColor" strokeWidth="1.2"/><circle cx="11" cy="11.5" r="1.5" stroke="currentColor" strokeWidth="1.2"/><circle cx="3" cy="7" r="1.5" stroke="currentColor" strokeWidth="1.2"/><path d="M4.3 6.2L9.7 3.3M4.3 7.8L9.7 10.7" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>
+              {showShare?"카드 닫기":"인스타 공유 카드"}{!anyOn&&<span style={{fontSize:10,opacity:.6}}>· 카테고리 활성화 후 이용</span>}
+            </button>
+            {showShare&&<div>
+              <div ref={shareRef} style={{borderRadius:28,overflow:"hidden",marginBottom:10}}>
+                <ShareCardEl dateStr={selDate} dayData={dayData} soulOn={soulOn} bodyOn={bodyOn} mindOn={mindOn} ss={ss} bs={bs} ms={ms}/>
+              </div>
+              <button onClick={saveImage} disabled={saving} style={{width:"100%",padding:"13px",background:saving?T.muted:"#1A1A1A",color:"#fff",border:"none",borderRadius:14,fontSize:13,fontWeight:700,cursor:saving?"not-allowed":"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:8,boxShadow:"0 4px 14px rgba(0,0,0,.18)",transition:"all .2s"}}>
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1v8M4 6l3 3 3-3" stroke="white" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/><path d="M1 10v1a2 2 0 002 2h8a2 2 0 002-2v-1" stroke="white" strokeWidth="1.4" strokeLinecap="round"/></svg>
+                {saving?"저장 중...":"이미지 저장 (사진첩)"}
               </button>
-
-              {showShare&&(
-                <div>
-                  <div ref={shareRef} style={{borderRadius:28,overflow:"hidden",marginBottom:10}}>
-                    <ShareCardEl dateStr={selDate} checks={checks}
-                      soulOn={soulOn} bodyOn={bodyOn} mindOn={mindOn}
-                      ss={ss} bs={bs} ms={ms}/>
-                  </div>
-                  <button onClick={saveImage} disabled={saving} style={{
-                    width:"100%",padding:"13px",
-                    background:saving?T.muted:"#1A1A1A",
-                    color:"#fff",border:"none",borderRadius:14,
-                    fontSize:13,fontWeight:700,cursor:saving?"not-allowed":"pointer",
-                    display:"flex",alignItems:"center",justifyContent:"center",gap:8,
-                    boxShadow:"0 4px 14px rgba(0,0,0,.18)",transition:"all .2s",
-                  }}>
-                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                      <path d="M7 1v8M4 6l3 3 3-3" stroke="white" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
-                      <path d="M1 10v1a2 2 0 002 2h8a2 2 0 002-2v-1" stroke="white" strokeWidth="1.4" strokeLinecap="round"/>
-                    </svg>
-                    {saving?"저장 중...":"이미지 저장 (사진첩)"}
-                  </button>
-                  {saveMsg&&<div style={{textAlign:"center",fontSize:12,color:T.body,marginTop:8,fontWeight:600}}>{saveMsg}</div>}
-                </div>
-              )}
-            </>
-          )}
+              {saveMsg&&<div style={{textAlign:"center",fontSize:12,color:T.body,marginTop:8,fontWeight:600}}>{saveMsg}</div>}
+            </div>}
+          </>}
         </div>
       )}
 
-      {/* ═══ TAB: DOPAMINE ═══ */}
+      {/* ══ DOPAMINE ══ */}
       {tab==="dopamine"&&(
         <div style={{padding:"16px 24px 0",display:"flex",flexDirection:"column",gap:14}}>
           <div style={{background:T.card,borderRadius:20,padding:"20px 18px",border:`1px solid ${T.border}`,boxShadow:"0 1px 8px rgba(0,0,0,.04)"}}>
-            {(()=>{
-              const INSIGHTS=[
-                {title:"도파민 과잉은 역치를 높여 평범한 것들을 무감각하게 만듭니다.",body:"숏폼·소셜 미디어는 예측 오류 기반 도파민을 과자극합니다.",keyword:"슬로우 도파민",keyBody:"— 운동, 독서, 기도, 자연 — 이 진짜 회복의 원천입니다."},
-                {title:"수면 중 뇌는 독소를 청소하고 기억을 정리합니다.",body:"7시간 미만 수면은 전전두피질 기능을 떨어뜨려 판단력과 감정 조절을 약화시킵니다.",keyword:"깊은 수면",keyBody:"이 최고의 뇌 회복제입니다."},
-                {title:"감사는 뇌의 구조를 바꿉니다.",body:"감사 일기를 3주 이상 쓰면 내측전전두피질이 두꺼워지고 부정 편향이 줄어드는 것이 MRI로 확인됩니다.",keyword:"감사 훈련",keyBody:"은 가장 저비용 고효율의 멘탈 관리법입니다."},
-                {title:"걷기는 뇌의 창의력 스위치를 켭니다.",body:"Stanford 연구에 따르면 걷는 동안 창의적 사고가 앉아있을 때보다 81% 증가합니다.",keyword:"야외 걷기",keyBody:"는 머리를 비우면서 동시에 채웁니다."},
-                {title:"호흡은 유일하게 의식으로 자율신경계를 조절하는 방법입니다.",body:"4-7-8 호흡 또는 천천히 내쉬기만으로도 미주신경이 자극되어 스트레스 반응이 즉시 완화됩니다.",keyword:"느린 호흡",keyBody:"은 언제 어디서나 쓸 수 있는 최강의 리셋 도구입니다."},
-                {title:"사회적 연결은 뇌의 통증 회로를 줄여줍니다.",body:"고립감은 뇌에서 신체 통증과 동일한 부위를 활성화합니다. 공동체 교제는 선택이 아닌 필수입니다.",keyword:"공동체",keyBody:"안에서 우리는 더 건강해집니다."},
-                {title:"자연은 주의력을 회복시키는 가장 빠른 환경입니다.",body:"도시 환경과 달리 자연의 자극은 하향식 주의를 요구하지 않아 뇌가 자발적으로 쉬게 됩니다.",keyword:"자연 속 20분",keyBody:"이 커피 한 잔보다 집중력을 더 오래 유지시킵니다."},
-              ];
-              const ins=INSIGHTS[new Date().getDay()];
-              return <>
-                <div style={{fontSize:9,letterSpacing:".16em",color:T.muted,marginBottom:8}}>🧠 오늘의 뇌과학 인사이트</div>
-                <div style={{fontSize:14,fontWeight:700,lineHeight:1.65,color:T.ink,marginBottom:10}}>{ins.title}</div>
-                <div style={{fontSize:11,color:T.sub,lineHeight:1.8}}>{ins.body} <span style={{color:T.soul,fontWeight:600}}>{ins.keyword}</span> {ins.keyBody}</div>
-              </>;
-            })()}
+            <div style={{fontSize:9,letterSpacing:".16em",color:T.muted,marginBottom:8}}>🧠 오늘의 뇌과학 인사이트</div>
+            <div style={{fontSize:14,fontWeight:700,lineHeight:1.65,color:T.ink,marginBottom:10}}>{insight.title}</div>
+            <div style={{fontSize:11,color:T.sub,lineHeight:1.8}}>{insight.body} <span style={{color:T.soul,fontWeight:600}}>{insight.kw}</span> {insight.kb}</div>
           </div>
-
           <div style={{background:T.card,borderRadius:20,overflow:"hidden",border:`1px solid ${T.border}`,boxShadow:"0 1px 8px rgba(0,0,0,.04)"}}>
             <div style={{padding:"16px 18px 14px",background:`linear-gradient(90deg,${T.soulBg},transparent)`,borderBottom:`1px solid ${T.border}`}}>
               <div style={{fontSize:9,letterSpacing:".16em",color:T.muted,marginBottom:6}}>오늘의 리셋 미션</div>
@@ -800,28 +457,10 @@ function App() {
                 <div style={{fontSize:9,color:T.soul,fontWeight:700,marginBottom:4,letterSpacing:".1em"}}>왜 효과적인가</div>
                 <div style={{fontSize:11,color:T.sub,lineHeight:1.7}}>{mission.sci}</div>
               </div>
-              {!missionDone
-                ?<button onClick={()=>{setMissionDone(true);setShowReward(true);setTimeout(()=>setShowReward(false),5000);}} style={{
-                    width:"100%",padding:"13px",background:T.soul,color:"#fff",
-                    border:"none",borderRadius:12,fontSize:13,fontWeight:700,cursor:"pointer",
-                    boxShadow:`0 4px 14px ${T.soul}44`,
-                  }}>미션 완료 ✓</button>
-                :<div style={{textAlign:"center",padding:"13px",background:T.soulBg,borderRadius:12,color:T.soul,fontWeight:700,fontSize:13}}>✓ 오늘 미션 완료</div>
-              }
+              {!missionDone?<button onClick={()=>{setMissionDone(true);setShowReward(true);setTimeout(()=>setShowReward(false),5000);}} style={{width:"100%",padding:"13px",background:T.soul,color:"#fff",border:"none",borderRadius:12,fontSize:13,fontWeight:700,cursor:"pointer",boxShadow:`0 4px 14px ${T.soul}44`}}>미션 완료 ✓</button>:<div style={{textAlign:"center",padding:"13px",background:T.soulBg,borderRadius:12,color:T.soul,fontWeight:700,fontSize:13}}>✓ 오늘 미션 완료</div>}
             </div>
           </div>
-
-          {showReward&&(
-            <div style={{
-              background:"linear-gradient(145deg,#1C1624,#122018)",
-              borderRadius:20,padding:"22px 18px",textAlign:"center",
-              border:`1px solid ${T.soul}40`,boxShadow:`0 8px 28px ${T.soul}22`,
-            }}>
-              <div style={{fontSize:34,marginBottom:10}}>🌟</div>
-              <div style={{fontSize:14,fontWeight:700,lineHeight:1.7,color:"#fff"}}>{mission.reward}</div>
-            </div>
-          )}
-
+          {showReward&&<div style={{background:"linear-gradient(145deg,#1C1624,#122018)",borderRadius:20,padding:"22px 18px",textAlign:"center",border:`1px solid ${T.soul}40`,boxShadow:`0 8px 28px ${T.soul}22`}}><div style={{fontSize:34,marginBottom:10}}>🌟</div><div style={{fontSize:14,fontWeight:700,lineHeight:1.7,color:"#fff"}}>{mission.reward}</div></div>}
           <div style={{background:T.card,borderRadius:20,padding:"18px 16px",border:`1px solid ${T.border}`,boxShadow:"0 1px 8px rgba(0,0,0,.04)"}}>
             <div style={{fontSize:11,fontWeight:700,color:T.sub,marginBottom:12,letterSpacing:".06em"}}>이번 주 미션</div>
             {MISSIONS.map((m,i)=>(
@@ -834,21 +473,15 @@ function App() {
         </div>
       )}
 
-      {/* ═══ TAB: MEAL ═══ */}
+      {/* ══ MEAL ══ */}
       {tab==="meal"&&(
         <div style={{padding:"16px 24px 0",display:"flex",flexDirection:"column",gap:14}}>
-          {/* API Key 설정 */}
-          {!localStorage.getItem("whl_apikey")&&(
-            <ApiKeyBanner/>
-          )}
-
           <div style={{background:T.card,borderRadius:20,padding:"20px 18px",border:`1px solid ${T.border}`,boxShadow:"0 1px 8px rgba(0,0,0,.04)"}}>
             <div style={{fontSize:13,fontWeight:700,color:T.ink,marginBottom:4}}>냉장고 재료 입력</div>
             <div style={{fontSize:11,color:T.muted,marginBottom:10}}>탭을 눌러 재료를 추가하거나 직접 입력하세요</div>
-            {/* 빠른 재료 탭 */}
             {[
               {cat:"단백질",items:["달걀","닭가슴살","두부","참치캔","삼겹살","소고기","연어","새우","베이컨"]},
-              {cat:"채소",items:["양배추","김치","시금치","당근","양파","대파·쪽파","마늘","애호박","버섯","오이","파프리카"]},
+              {cat:"채소",  items:["양배추","김치","시금치","당근","양파","대파·쪽파","마늘","애호박","버섯","오이","파프리카"]},
               {cat:"탄수화물",items:["곡물밥","밥","고구마","감자","오트밀","식빵","파스타","라이스페이퍼"]},
               {cat:"양념·기타",items:["간장","고추장","된장","참기름","올리브오일","굴소스","쯔유","스리라차","마요네즈","홀그레인머스터드","치즈","김","요거트"]},
             ].map(({cat,items})=>(
@@ -856,101 +489,31 @@ function App() {
                 <div style={{fontSize:9,fontWeight:700,color:T.muted,letterSpacing:".1em",marginBottom:5}}>{cat}</div>
                 <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
                   {items.map(item=>{
-                    const already = ingredients.includes(item);
-                    return (
-                      <button key={item} onClick={()=>{
-                        if(already){
-                          setIngredients(prev=>prev.split(",").map(s=>s.trim()).filter(s=>s!==item).join(", "));
-                        } else {
-                          setIngredients(prev=>prev?prev.trimEnd()+(prev.trimEnd().endsWith(",")?" ":", ")+item:item);
-                        }
-                      }} style={{
-                        fontSize:11,padding:"4px 10px",borderRadius:20,cursor:"pointer",
-                        fontFamily:"Pretendard,sans-serif",fontWeight:already?700:400,
-                        background:already?T.body:"#F0EDE8",
-                        color:already?"#fff":T.sub,
-                        border:`1px solid ${already?T.body:T.border}`,
-                        transition:"all .15s",
-                      }}>{already?"✓ ":""}{item}</button>
-                    );
+                    const on=ingredients.split(",").map(s=>s.trim()).includes(item);
+                    return <button key={item} onClick={()=>{ if(on){setIngredients(prev=>prev.split(",").map(s=>s.trim()).filter(s=>s!==item).join(", "));}else{setIngredients(prev=>prev?prev.trimEnd()+(prev.trimEnd().endsWith(",")?" ":", ")+item:item);} }} style={{fontSize:11,padding:"4px 10px",borderRadius:20,cursor:"pointer",fontFamily:"Pretendard,sans-serif",fontWeight:on?700:400,background:on?T.body:"#F0EDE8",color:on?"#fff":T.sub,border:`1px solid ${on?T.body:T.border}`,transition:"all .15s"}}>{on?"✓ ":""}{item}</button>;
                   })}
                 </div>
               </div>
             ))}
-            <textarea value={ingredients} onChange={e=>setIngredients(e.target.value)} rows={3}
-              placeholder="추가 재료를 직접 입력하거나 위에서 선택하세요..."
-              style={{width:"100%",marginTop:8,padding:"12px 14px",borderRadius:12,border:`1px solid ${T.border}`,background:T.surface,color:T.ink,fontFamily:"Pretendard,sans-serif",fontSize:13,outline:"none",resize:"vertical",lineHeight:1.6}}/>
-            <button onClick={generateMeals} disabled={loadingMeal} style={{
-              width:"100%",marginTop:12,padding:"13px",
-              background:loadingMeal?T.muted:T.body,color:"#fff",
-              border:"none",borderRadius:12,fontSize:13,fontWeight:700,
-              cursor:loadingMeal?"not-allowed":"pointer",
-              boxShadow:loadingMeal?"none":`0 4px 14px ${T.body}44`,transition:"all .2s",
-            }}>{loadingMeal?"🥗 생성 중...":"✨ AI 일주일 도시락 플랜 생성"}</button>
+            <textarea value={ingredients} onChange={e=>setIngredients(e.target.value)} rows={3} placeholder="추가 재료를 직접 입력하거나 위에서 선택하세요..." style={{width:"100%",marginTop:8,padding:"12px 14px",borderRadius:12,border:`1px solid ${T.border}`,background:T.surface,color:T.ink,fontFamily:"Pretendard,sans-serif",fontSize:13,outline:"none",resize:"vertical",lineHeight:1.6}}/>
+            <button onClick={generateMeals} disabled={loadingMeal} style={{width:"100%",marginTop:12,padding:"13px",background:loadingMeal?T.muted:T.body,color:"#fff",border:"none",borderRadius:12,fontSize:13,fontWeight:700,cursor:loadingMeal?"not-allowed":"pointer",boxShadow:loadingMeal?"none":`0 4px 14px ${T.body}44`,transition:"all .2s"}}>{loadingMeal?"🥗 생성 중...":"✨ AI 일주일 식단 플랜 생성"}</button>
             {mealError&&<div style={{color:"#D05050",fontSize:11,marginTop:8,textAlign:"center"}}>{mealError}</div>}
           </div>
 
           {mealPlan&&(
             <div style={{background:T.card,borderRadius:20,overflow:"hidden",border:`1px solid ${T.border}`,boxShadow:"0 1px 8px rgba(0,0,0,.04)"}}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"14px 16px 12px",borderBottom:`1px solid ${T.border}`,background:`linear-gradient(90deg,${T.bodyBg},transparent)`}}>
-                <div style={{display:"flex",alignItems:"center",gap:8}}>
-                  <div style={{width:7,height:7,borderRadius:"50%",background:T.body}}/>
-                  <span style={{fontSize:13,fontWeight:800,color:T.body}}>이번 주 식단 플랜</span>
-                </div>
-                <button onClick={()=>{setMealPlan(null);localStorage.removeItem("whl_mealplan");}} style={{
-                  fontSize:10,color:T.muted,background:"none",border:`1px solid ${T.border}`,
-                  borderRadius:8,padding:"4px 10px",cursor:"pointer",fontFamily:"Pretendard,sans-serif",
-                }}>🔄 새로 생성</button>
+                <div style={{display:"flex",alignItems:"center",gap:8}}><div style={{width:7,height:7,borderRadius:"50%",background:T.body}}/><span style={{fontSize:13,fontWeight:800,color:T.body}}>이번 주 식단 플랜</span></div>
+                <button onClick={()=>{setMealPlan(null);localStorage.removeItem("whl_mealplan");}} style={{fontSize:10,color:T.muted,background:"none",border:`1px solid ${T.border}`,borderRadius:8,padding:"4px 10px",cursor:"pointer",fontFamily:"Pretendard,sans-serif"}}>🔄 새로 생성</button>
               </div>
               <div style={{padding:"12px"}}>
                 {mealPlan.map((day,i)=>(
                   <div key={i} style={{marginBottom:10,borderRadius:14,overflow:"hidden",border:`1px solid ${T.border}`}}>
-                    {/* 요일 헤더 */}
-                    <div style={{background:T.body,padding:"7px 14px",display:"flex",alignItems:"center",gap:8}}>
-                      <span style={{fontSize:12,fontWeight:800,color:"#fff"}}>{day.day}요일</span>
-                    </div>
+                    <div style={{background:T.body,padding:"7px 14px"}}><span style={{fontSize:12,fontWeight:800,color:"#fff"}}>{day.day}요일</span></div>
                     <div style={{background:T.surface,padding:"10px 14px",display:"flex",flexDirection:"column",gap:8}}>
-                      {/* 아침 */}
-                      {day.breakfast&&(
-                        <div style={{display:"flex",gap:10,alignItems:"flex-start"}}>
-                          <div style={{fontSize:9,fontWeight:700,color:"#E07C3A",minWidth:28,paddingTop:1}}>아침</div>
-                          <div>
-                            <div style={{fontSize:12,fontWeight:600,color:T.ink}}>{day.breakfast.menu}</div>
-                            {day.breakfast.tip&&<div style={{fontSize:10,color:T.muted,marginTop:1}}>💡 {day.breakfast.tip}</div>}
-                          </div>
-                        </div>
-                      )}
-                      {/* 구분선 */}
-                      {day.breakfast&&<div style={{height:1,background:T.border}}/>}
-                      {/* 간식 */}
-                      {day.snack&&(
-                        <div style={{display:"flex",gap:10,alignItems:"flex-start"}}>
-                          <div style={{fontSize:9,fontWeight:700,color:T.mind,minWidth:28,paddingTop:1}}>간식</div>
-                          <div>
-                            <div style={{fontSize:12,fontWeight:600,color:T.ink}}>{day.snack.menu}</div>
-                            {day.snack.tip&&<div style={{fontSize:10,color:T.muted,marginTop:1}}>💡 {day.snack.tip}</div>}
-                          </div>
-                        </div>
-                      )}
-                      {day.snack&&<div style={{height:1,background:T.border}}/>}
-                      {/* 점심 도시락 */}
-                      {day.lunch&&(
-                        <div style={{display:"flex",gap:10,alignItems:"flex-start"}}>
-                          <div style={{fontSize:9,fontWeight:700,color:T.body,minWidth:28,paddingTop:1}}>점심</div>
-                          <div style={{flex:1}}>
-                            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                              <div style={{fontSize:12,fontWeight:600,color:T.ink}}>{day.lunch.menu}</div>
-                              {day.lunch.kcal&&<span style={{fontSize:9,color:T.muted}}>{day.lunch.kcal}</span>}
-                            </div>
-                            <div style={{display:"flex",flexWrap:"wrap",gap:3,marginTop:4}}>
-                              {(day.lunch.ingredients||[]).map((ing,j)=>(
-                                <span key={j} style={{fontSize:9,padding:"2px 7px",background:T.bodyBg,color:T.body,borderRadius:20,fontWeight:500}}>{ing}</span>
-                              ))}
-                            </div>
-                            {day.lunch.tip&&<div style={{fontSize:10,color:T.muted,marginTop:4,fontStyle:"italic"}}>💡 {day.lunch.tip}</div>}
-                          </div>
-                        </div>
-                      )}
+                      {day.breakfast&&<><div style={{display:"flex",gap:10,alignItems:"flex-start"}}><div style={{fontSize:9,fontWeight:700,color:"#E07C3A",minWidth:28,paddingTop:1}}>아침</div><div><div style={{fontSize:12,fontWeight:600,color:T.ink}}>{day.breakfast.menu}</div>{day.breakfast.tip&&<div style={{fontSize:10,color:T.muted,marginTop:1}}>💡 {day.breakfast.tip}</div>}</div></div><div style={{height:1,background:T.border}}/></>}
+                      {day.snack&&<><div style={{display:"flex",gap:10,alignItems:"flex-start"}}><div style={{fontSize:9,fontWeight:700,color:T.mind,minWidth:28,paddingTop:1}}>간식</div><div><div style={{fontSize:12,fontWeight:600,color:T.ink}}>{day.snack.menu}</div>{day.snack.tip&&<div style={{fontSize:10,color:T.muted,marginTop:1}}>💡 {day.snack.tip}</div>}</div></div><div style={{height:1,background:T.border}}/></>}
+                      {day.lunch&&<div style={{display:"flex",gap:10,alignItems:"flex-start"}}><div style={{fontSize:9,fontWeight:700,color:T.body,minWidth:28,paddingTop:1}}>점심</div><div style={{flex:1}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}><div style={{fontSize:12,fontWeight:600,color:T.ink}}>{day.lunch.menu}</div>{day.lunch.kcal&&<span style={{fontSize:9,color:T.muted}}>{day.lunch.kcal}</span>}</div><div style={{display:"flex",flexWrap:"wrap",gap:3,marginTop:4}}>{(day.lunch.ingredients||[]).map((ing,j)=><span key={j} style={{fontSize:9,padding:"2px 7px",background:T.bodyBg,color:T.body,borderRadius:20,fontWeight:500}}>{ing}</span>)}</div>{day.lunch.tip&&<div style={{fontSize:10,color:T.muted,marginTop:4,fontStyle:"italic"}}>💡 {day.lunch.tip}</div>}</div></div>}
                     </div>
                   </div>
                 ))}
@@ -959,134 +522,58 @@ function App() {
           )}
 
           <div style={{background:T.bodyBg,borderRadius:16,padding:"14px 16px",border:`1px solid ${T.body}20`}}>
-            <div style={{fontSize:11,fontWeight:700,color:T.body,marginBottom:8}}>건강 도시락 원칙</div>
-            {["단백질 + 복합탄수화물 + 채소의 황금 비율","전날 밤 준비 = 아침 여유","색깔이 다양할수록 영양이 균형 잡힙니다"].map((t,i)=>(
-              <div key={i} style={{fontSize:11,color:T.sub,marginBottom:3}}>· {t}</div>
-            ))}
+            <div style={{fontSize:11,fontWeight:700,color:T.body,marginBottom:8}}>건강 식단 원칙</div>
+            {["단백질 + 복합탄수화물 + 채소의 황금 비율","전날 밤 준비 = 아침 여유","색깔이 다양할수록 영양이 균형 잡힙니다"].map((t,i)=><div key={i} style={{fontSize:11,color:T.sub,marginBottom:3}}>· {t}</div>)}
           </div>
         </div>
       )}
 
-      {/* ═══ TAB: BACKUP ═══ */}
+      {/* ══ BACKUP ══ */}
       {tab==="backup"&&(
         <div style={{padding:"16px 24px 0",display:"flex",flexDirection:"column",gap:14}}>
-
-          {/* 내보내기 */}
           <div style={{background:T.card,borderRadius:20,padding:"20px 18px",border:`1px solid ${T.border}`,boxShadow:"0 1px 8px rgba(0,0,0,.04)"}}>
             <div style={{fontSize:10,letterSpacing:".14em",color:T.muted,marginBottom:12}}>📤 데이터 내보내기</div>
-            <div style={{fontSize:12,color:T.sub,lineHeight:1.7,marginBottom:16}}>
-              지금까지의 모든 기록을 백업합니다.<br/>
-              기기를 바꾸거나 앱을 초기화할 때 사용하세요.
-            </div>
+            <div style={{fontSize:12,color:T.sub,lineHeight:1.7,marginBottom:16}}>지금까지의 모든 기록을 백업합니다.<br/>기기를 바꾸거나 앱을 초기화할 때 사용하세요.</div>
             <div style={{display:"flex",flexDirection:"column",gap:8}}>
-              <button onClick={exportBackup} style={{
-                width:"100%",padding:"13px",
-                background:T.soul,color:"#fff",
-                border:"none",borderRadius:12,fontSize:13,fontWeight:700,cursor:"pointer",
-                display:"flex",alignItems:"center",justifyContent:"center",gap:8,
-                boxShadow:`0 4px 14px ${T.soul}44`,
-              }}>
-                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                  <path d="M7 1v8M4 6l3 3 3-3" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M1 10v1a2 2 0 002 2h8a2 2 0 002-2v-1" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
-                </svg>
+              <button onClick={exportBackup} style={{width:"100%",padding:"13px",background:T.soul,color:"#fff",border:"none",borderRadius:12,fontSize:13,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:8,boxShadow:`0 4px 14px ${T.soul}44`}}>
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1v8M4 6l3 3 3-3" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><path d="M1 10v1a2 2 0 002 2h8a2 2 0 002-2v-1" stroke="white" strokeWidth="1.5" strokeLinecap="round"/></svg>
                 JSON 파일로 저장
               </button>
-              <button onClick={exportEmail} style={{
-                width:"100%",padding:"13px",
-                background:T.card,color:T.ink,
-                border:`1px solid ${T.border}`,borderRadius:12,fontSize:13,fontWeight:700,cursor:"pointer",
-                display:"flex",alignItems:"center",justifyContent:"center",gap:8,
-              }}>
-                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                  <rect x="1" y="3" width="12" height="9" rx="2" stroke="currentColor" strokeWidth="1.3"/>
-                  <path d="M1 5l6 4 6-4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
-                </svg>
+              <button onClick={exportEmail} style={{width:"100%",padding:"13px",background:T.card,color:T.ink,border:`1px solid ${T.border}`,borderRadius:12,fontSize:13,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="1" y="3" width="12" height="9" rx="2" stroke="currentColor" strokeWidth="1.3"/><path d="M1 5l6 4 6-4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>
                 메일로 보내기
               </button>
             </div>
             {backupMsg&&<div style={{textAlign:"center",fontSize:12,color:T.body,marginTop:10,fontWeight:600}}>{backupMsg}</div>}
           </div>
-
-          {/* 불러오기 */}
           <div style={{background:T.card,borderRadius:20,padding:"20px 18px",border:`1px solid ${T.border}`,boxShadow:"0 1px 8px rgba(0,0,0,.04)"}}>
             <div style={{fontSize:10,letterSpacing:".14em",color:T.muted,marginBottom:12}}>📥 데이터 복구</div>
-            <div style={{fontSize:12,color:T.sub,lineHeight:1.7,marginBottom:16}}>
-              저장해둔 백업 파일(.json)을 불러와<br/>
-              모든 기록을 복구합니다.
-            </div>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".json,application/json"
-              onChange={importBackup}
-              style={{display:"none"}}
-            />
-            <button onClick={()=>fileInputRef.current&&fileInputRef.current.click()} style={{
-              width:"100%",padding:"13px",
-              background:T.body,color:"#fff",
-              border:"none",borderRadius:12,fontSize:13,fontWeight:700,cursor:"pointer",
-              display:"flex",alignItems:"center",justifyContent:"center",gap:8,
-              boxShadow:`0 4px 14px ${T.body}44`,
-            }}>
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                <path d="M7 9V1M4 4l3-3 3 3" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M1 10v1a2 2 0 002 2h8a2 2 0 002-2v-1" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
-              </svg>
+            <div style={{fontSize:12,color:T.sub,lineHeight:1.7,marginBottom:16}}>저장해둔 백업 파일(.json)을 불러와<br/>모든 기록을 복구합니다.</div>
+            <input ref={fileInputRef} type="file" accept=".json,application/json" onChange={importBackup} style={{display:"none"}}/>
+            <button onClick={()=>fileInputRef.current&&fileInputRef.current.click()} style={{width:"100%",padding:"13px",background:T.body,color:"#fff",border:"none",borderRadius:12,fontSize:13,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:8,boxShadow:`0 4px 14px ${T.body}44`}}>
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 9V1M4 4l3-3 3 3" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><path d="M1 10v1a2 2 0 002 2h8a2 2 0 002-2v-1" stroke="white" strokeWidth="1.5" strokeLinecap="round"/></svg>
               백업 파일 불러오기
             </button>
-            {restoreMsg&&(
-              <div style={{
-                marginTop:12,padding:"10px 14px",
-                background:restoreMsg.startsWith("✓")?T.bodyBg:"#FEE2E2",
-                borderRadius:10,fontSize:12,fontWeight:600,
-                color:restoreMsg.startsWith("✓")?T.body:"#DC2626",
-                lineHeight:1.5,
-              }}>{restoreMsg}</div>
-            )}
+            {restoreMsg&&<div style={{marginTop:12,padding:"10px 14px",background:restoreMsg.startsWith("✓")?T.bodyBg:"#FEE2E2",borderRadius:10,fontSize:12,fontWeight:600,color:restoreMsg.startsWith("✓")?T.body:"#DC2626",lineHeight:1.5}}>{restoreMsg}</div>}
           </div>
-
-          {/* 안내 */}
           <div style={{background:T.soulBg,borderRadius:16,padding:"14px 16px",border:`1px solid ${T.soul}20`}}>
             <div style={{fontSize:11,fontWeight:700,color:T.soul,marginBottom:8}}>💡 백업 방법 안내</div>
-            {[
-              "정기적으로 JSON 파일로 저장해두세요",
-              "파일은 iCloud Drive나 Google Drive에 보관하면 안전해요",
-              "메일로 보내기는 본인 메일로 전송해 보관할 수 있어요",
-              "복구 시 기존 같은 날짜 데이터는 덮어씌워져요",
-            ].map((t,i)=>(
-              <div key={i} style={{fontSize:11,color:T.sub,marginBottom:3}}>· {t}</div>
-            ))}
+            {["정기적으로 JSON 파일로 저장해두세요","파일은 iCloud Drive나 Google Drive에 보관하면 안전해요","메일로 보내기는 본인 메일로 전송해 보관할 수 있어요","복구 시 기존 같은 날짜 데이터는 덮어씌워져요"].map((t,i)=><div key={i} style={{fontSize:11,color:T.sub,marginBottom:3}}>· {t}</div>)}
           </div>
-
-          {/* API 키 관리 */}
           <ApiKeySection/>
-
         </div>
       )}
 
       {/* Bottom nav */}
-      <div style={{
-        position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",
-        width:"100%",maxWidth:430,
-        background:"rgba(245,242,236,.92)",backdropFilter:"blur(16px)",
-        borderTop:`1px solid ${T.border}`,
-        display:"flex",padding:"10px 0 16px",
-      }}>
+      <div style={{position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:430,background:"rgba(245,242,236,.92)",backdropFilter:"blur(16px)",borderTop:`1px solid ${T.border}`,display:"flex",padding:"10px 0 16px"}}>
         {[
           ["today","기록","M9 5.5a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0ZM1 15.5c0-3.038 2.462-5.5 5.5-5.5s5.5 2.462 5.5 5.5"],
           ["dopamine","리셋","M9 2C5.686 2 3 4.686 3 8c0 2.21 1.13 4.16 2.84 5.31L5.5 15h7l-.34-1.69A6 6 0 0 0 15 8c0-3.314-2.686-6-6-6ZM7 15.5h4"],
           ["meal","식단","M2 9h14M3 9a7 7 0 0 1 12 0M5 14.5c0 .828 1.791 1.5 4 1.5s4-.672 4-1.5M5 14.5V12m8 2.5V12M9 12V9"],
           ["backup","백업","M9 1v10M6 8l3 3 3-3M2 13v2a2 2 0 002 2h10a2 2 0 002-2v-2"],
         ].map(([k,l,p])=>(
-          <button key={k} onClick={()=>setTab(k)} style={{
-            flex:1,background:"none",border:"none",cursor:"pointer",
-            display:"flex",flexDirection:"column",alignItems:"center",gap:3,
-            color:tab===k?T.soul:T.muted,transition:"color .2s",
-          }}>
-            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-              <path d={p} stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
-            </svg>
+          <button key={k} onClick={()=>setTab(k)} style={{flex:1,background:"none",border:"none",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:3,color:tab===k?T.soul:T.muted,transition:"color .2s"}}>
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d={p} stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg>
             <span style={{fontSize:10,fontWeight:tab===k?700:400}}>{l}</span>
             {tab===k&&<div style={{width:14,height:2,borderRadius:1,background:T.soul}}/>}
           </button>
