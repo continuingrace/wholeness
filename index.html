@@ -443,17 +443,24 @@ function App() {
   const mission  = MISSIONS[new Date().getDay()];
 
   useEffect(()=>{
-    const data=loadDay(selDate);
-    setChecks(data);
+    const data = loadDay(selDate);
+    setChecks({...data});
     setSoulOn(!!data.__soulOn);
     setBodyOn(!!data.__bodyOn);
     setMindOn(!!data.__mindOn);
     setShowShare(false);
+    setShowCal(false);
   },[selDate]);
 
+  const isLoadedRef = React.useRef(false);
   useEffect(()=>{
+    // selDate 변경 직후엔 저장 스킵 (로드 effect가 먼저 실행되도록)
+    isLoadedRef.current = false;
+  },[selDate]);
+  useEffect(()=>{
+    if(!isLoadedRef.current){ isLoadedRef.current=true; return; }
     saveDay(selDate,{...checks,__soulOn:soulOn,__bodyOn:bodyOn,__mindOn:mindOn});
-  },[checks,soulOn,bodyOn,mindOn,selDate]);
+  },[checks,soulOn,bodyOn,mindOn]);
 
   const toggle = useCallback(id=>{
     if(readonly)return;
@@ -529,8 +536,14 @@ function App() {
         Object.entries(records).forEach(([k,v])=>{
           if(k.startsWith("whl_")){ localStorage.setItem(k,v); count++; }
         });
-        setRestoreMsg(`✓ ${count}일치 기록이 복구됐어요! 날짜를 선택해 확인하세요.`);
-        setChecks(loadDay(selDate));
+        const today = todayStr();
+        const dayData = loadDay(today);
+        setChecks(dayData);
+        setSoulOn(!!dayData.__soulOn);
+        setBodyOn(!!dayData.__bodyOn);
+        setMindOn(!!dayData.__mindOn);
+        setSelDate(today);
+        setRestoreMsg(`✓ ${count}일치 기록이 복구됐어요!`);
         setTimeout(()=>setRestoreMsg(""),5000);
       } catch {
         setRestoreMsg("파일 형식이 올바르지 않아요. 백업 파일을 확인해주세요.");
