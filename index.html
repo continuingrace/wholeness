@@ -253,7 +253,10 @@ function App() {
   const [backupMsg,setBackupMsg]     = useState("");
   const [restoreMsg,setRestoreMsg]   = useState("");
   const shareRef    = useRef(null);
+  const mealCardRef = useRef(null);
   const fileInputRef = useRef(null);
+  const [savingMeal,setSavingMeal] = useState(false);
+  const [mealSaveMsg,setMealSaveMsg] = useState("");
 
   const isToday  = selDate===todayStr();
   const readonly = !isToday;
@@ -294,6 +297,17 @@ function App() {
       setSaveMsg("✓ 저장 완료! 갤러리에서 확인하세요.");
     } catch{ setSaveMsg("이미지를 길게 눌러 저장하세요."); }
     setSaving(false); setTimeout(()=>setSaveMsg(""),3500);
+  };
+
+  const saveMealImage = async () => {
+    if(!mealCardRef.current)return; setSavingMeal(true);
+    try {
+      if(!window.html2canvas){ await new Promise((res,rej)=>{ const s=document.createElement("script"); s.src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"; s.onload=res; s.onerror=rej; document.head.appendChild(s); }); }
+      const canvas=await window.html2canvas(mealCardRef.current,{scale:3,useCORS:true,backgroundColor:"#FFFFFF",logging:false});
+      const url=canvas.toDataURL("image/png"); const a=document.createElement("a"); a.href=url; a.download=`wholeness_meal_${todayStr()}.png`; a.click();
+      setMealSaveMsg("✓ 식단 이미지 저장 완료!");
+    } catch{ setMealSaveMsg("이미지를 길게 눌러 저장하세요."); }
+    setSavingMeal(false); setTimeout(()=>setMealSaveMsg(""),3500);
   };
 
   const exportBackup = () => {
@@ -515,7 +529,8 @@ function App() {
           </div>
 
           {mealPlan&&(
-            <div style={{background:T.card,borderRadius:20,overflow:"hidden",border:`1px solid ${T.border}`,boxShadow:"0 1px 8px rgba(0,0,0,.04)"}}>
+            <div>
+            <div ref={mealCardRef} style={{background:T.card,borderRadius:20,overflow:"hidden",border:`1px solid ${T.border}`,boxShadow:"0 1px 8px rgba(0,0,0,.04)"}}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"14px 16px 12px",borderBottom:`1px solid ${T.border}`,background:`linear-gradient(90deg,${T.bodyBg},transparent)`}}>
                 <div style={{display:"flex",alignItems:"center",gap:8}}><div style={{width:7,height:7,borderRadius:"50%",background:T.body}}/><span style={{fontSize:13,fontWeight:800,color:T.body}}>이번 주 식단 플랜</span></div>
                 <button onClick={()=>{setMealPlan(null);localStorage.removeItem("whl_mealplan");}} style={{fontSize:10,color:T.muted,background:"none",border:`1px solid ${T.border}`,borderRadius:8,padding:"4px 10px",cursor:"pointer",fontFamily:"Pretendard,sans-serif"}}>🔄 새로 생성</button>
@@ -534,6 +549,14 @@ function App() {
               </div>
             </div>
           )}
+
+            </div>{/* mealCardRef */}
+            <button onClick={saveMealImage} disabled={savingMeal} style={{width:"100%",marginTop:10,padding:"13px",background:savingMeal?T.muted:"#1A1A1A",color:"#fff",border:"none",borderRadius:14,fontSize:13,fontWeight:700,cursor:savingMeal?"not-allowed":"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:8,boxShadow:"0 4px 14px rgba(0,0,0,.18)",transition:"all .2s"}}>
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1v8M4 6l3 3 3-3" stroke="white" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/><path d="M1 10v1a2 2 0 002 2h8a2 2 0 002-2v-1" stroke="white" strokeWidth="1.4" strokeLinecap="round"/></svg>
+              {savingMeal?"저장 중...":"식단 이미지 저장"}
+            </button>
+            {mealSaveMsg&&<div style={{textAlign:"center",fontSize:12,color:T.body,marginTop:8,fontWeight:600}}>{mealSaveMsg}</div>}
+            </div>{/* outer wrapper */}
 
           <div style={{background:T.bodyBg,borderRadius:16,padding:"14px 16px",border:`1px solid ${T.body}20`}}>
             <div style={{fontSize:11,fontWeight:700,color:T.body,marginBottom:8}}>건강 식단 원칙</div>
