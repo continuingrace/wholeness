@@ -340,13 +340,27 @@ function App() {
       const res=await fetch("https://api.anthropic.com/v1/messages",{
         method:"POST",
         headers:{"Content-Type":"application/json","x-api-key":apiKey,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
-        body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1400,
-          system:`건강한 한식 식단 전문가. JSON만 반환. 형식: {"plan":[{"day":"월","breakfast":{"menu":"아침메뉴","tip":"팁"},"snack":{"menu":"간식메뉴","tip":"팁"},"lunch":{"menu":"점심메뉴","ingredients":["재료1","재료2"],"tip":"팁","kcal":"약 N kcal"}},...]} 7개 요일 전부. 아침은 5분 내 초간단, 간식은 건강하고 가볍게, 점심은 도시락으로 영양 균형.`,
-          messages:[{role:"user",content:`냉장고 재료: ${ingredients}\n\n일주일 아침·간식·점심 식단 플랜`}]}),
+        body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:2500,
+          system:`건강한 한식 식단 전문가. 완전한 JSON만 반환. 절대 중간에 끊지 말 것. 형식 정확히 준수: {"plan":[{"day":"월","breakfast":{"menu":"메뉴명","tip":"팁(15자이내)"},"snack":{"menu":"메뉴명","tip":"팁(15자이내)"},"lunch":{"menu":"메뉴명","ingredients":["재료1","재료2","재료3"],"tip":"팁(15자이내)","kcal":"약 N kcal"}},{"day":"화",...},{"day":"수",...},{"day":"목",...},{"day":"금",...},{"day":"토",...},{"day":"일",...}]} 반드시 월화수목금토일 7개 전부 포함.`,
+          messages:[{role:"user",content:`냉장고 재료: ${ingredients}
+
+위 형식 그대로 7일 식단 JSON만 반환.`}]}),
       });
       if(!res.ok){const err=await res.json().catch(()=>({}));throw new Error(err?.error?.message||`HTTP ${res.status}`);}
       const d=await res.json(); const text=d.content.map(i=>i.text||"").join("");
-      const plan=JSON.parse(text.replace(/```json|```/g,"").trim()).plan;
+      let clean=text.replace(/```json|```/g,"").trim();
+      // JSON이 잘린 경우 복구 시도
+      if(!clean.endsWith("}]}")) {
+        const lastComplete = clean.lastIndexOf('},"day":');
+        const lastDay = clean.lastIndexOf('{"day":');
+        if(lastDay > lastComplete) clean = clean.substring(0, lastDay);
+        // 닫는 괄호 보정
+        const opens = (clean.match(/\[/g)||[]).length - (clean.match(/\]/g)||[]).length;
+        const openBraces = (clean.match(/\{/g)||[]).length - (clean.match(/\}/g)||[]).length;
+        for(let i=0;i<openBraces;i++) clean+='}';
+        for(let i=0;i<opens;i++) clean+=']';
+      }
+      const plan=JSON.parse(clean).plan;
       setMealPlan(plan); localStorage.setItem("whl_mealplan",JSON.stringify(plan));
     } catch(e){setMealError("생성 실패: "+e.message);}
     setLoadingMeal(false);
