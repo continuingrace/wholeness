@@ -1,624 +1,874 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
-  <meta name="theme-color" content="#F5F2EC"/>
-  <title>온전한 하루 · Wholeness</title>
-  <link rel="manifest" href="manifest.json"/>
-  <link rel="apple-touch-icon" href="apple-touch-icon.png"/>
-  <meta name="apple-mobile-web-app-capable" content="yes"/>
-  <meta name="apple-mobile-web-app-status-bar-style" content="default"/>
-  <meta name="apple-mobile-web-app-title" content="온전한 하루"/>
-  <meta name="mobile-web-app-capable" content="yes"/>
-  <link rel="preconnect" href="https://cdn.jsdelivr.net"/>
-  <style>
-    @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
-    *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
-    body{background:#F5F2EC;font-family:'Pretendard',-apple-system,sans-serif;}
-    ::-webkit-scrollbar{width:0;}
-    @keyframes fadeUp{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:none;}}
-    @keyframes popIn{0%{transform:scale(.88);opacity:0;}70%{transform:scale(1.04);}100%{transform:scale(1);opacity:1;}}
-    .fadeUp{animation:fadeUp .32s cubic-bezier(.22,1,.36,1) both;}
-    .popIn{animation:popIn .4s cubic-bezier(.34,1.3,.64,1) both;}
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0">
+<title>글짓기 바구니</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="글짓기">
+<meta name="theme-color" content="#f4f0ea">
+<link rel="apple-touch-icon" href="icon.png">
+<link rel="icon" type="image/png" href="icon.png">
+<link rel="manifest" href="manifest.json">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+
+:root {
+  --ink:#1c1a18; --ink2:#4a4540; --ink3:#8a847c; --ink4:#b8b0a6;
+  --charcoal:#2c2a26; --bg:#f4f0ea; --bg2:#ece7df; --bg3:#e2dbd0;
+  --paper:#f9f6f0; --line:#d8d0c4; --warm:#8c7355; --warm2:#c4a882;
+  --serif:'Noto Serif KR','KoPub Batang',Georgia,serif;
+  --sans:'Pretendard','Apple SD Gothic Neo',sans-serif;
+  --r:8px; --header-h:54px; --tab-h:40px;
+  --max-w:480px;
+}
+.desktop-mode { --max-w:820px; }
+
+* { box-sizing:border-box; margin:0; padding:0; }
+html, body { height:100%; overflow:hidden; }
+body {
+  font-family:var(--sans); background:var(--bg); color:var(--ink);
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='400' height='400' filter='url(%23n)' opacity='0.055'/%3E%3C/svg%3E"),
+    repeating-linear-gradient(0deg,transparent,transparent 28px,rgba(0,0,0,0.018) 28px,rgba(0,0,0,0.018) 29px);
+}
+
+#view-wrap {
+  display:flex; flex-direction:column; height:100%; height:100dvh;
+  max-width:var(--max-w); margin:0 auto;
+  box-shadow:0 0 40px rgba(0,0,0,0.08);
+}
+
+#login-screen {
+  position:fixed; inset:0; z-index:400;
+  display:flex; align-items:center; justify-content:center;
+  background:var(--bg);
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='400' height='400' filter='url(%23n)' opacity='0.06'/%3E%3C/svg%3E");
+}
+.login-box { width:min(360px,90vw); display:flex; flex-direction:column; align-items:center; gap:20px; }
+.login-logo { font-family:var(--serif); font-weight:300; font-size:2rem; letter-spacing:0.22em; color:var(--ink); }
+.login-sub  { font-size:0.65rem; letter-spacing:0.18em; text-transform:uppercase; color:var(--ink3); }
+.login-form { width:100%; display:flex; flex-direction:column; gap:10px; }
+.login-form input { width:100%; padding:12px 14px; font-size:0.95rem; background:var(--paper); border:1px solid var(--line); border-radius:6px; color:var(--ink); font-family:var(--sans); }
+.login-form input:focus { outline:none; border-color:var(--ink3); }
+.login-btn { width:100%; padding:12px; font-size:0.78rem; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; background:var(--charcoal); color:#fff; border:none; border-radius:6px; cursor:pointer; }
+.login-btn:active { background:var(--ink2); }
+.login-toggle { font-size:0.72rem; color:var(--ink3); cursor:pointer; text-decoration:underline; }
+.login-err { font-size:0.72rem; color:#8b3030; text-align:center; min-height:1em; }
+
+#splash {
+  position:fixed; inset:0; z-index:300;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  background:var(--bg);
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='400' height='400' filter='url(%23n)' opacity='0.06'/%3E%3C/svg%3E");
+  cursor:pointer; transition:opacity .5s ease;
+}
+#splash.fade { opacity:0; pointer-events:none; }
+.splash-logo { font-family:var(--serif); font-weight:300; font-size:2.05rem; letter-spacing:0.22em; text-indent:0.22em; color:var(--ink); line-height:1; }
+.splash-count { margin-top:48px; font-family:var(--sans); font-size:0.63rem; letter-spacing:0.18em; text-transform:uppercase; color:var(--ink3); }
+.splash-hint  { margin-top:44px; font-family:var(--sans); font-size:0.6rem; letter-spacing:0.22em; text-transform:uppercase; color:var(--ink4); animation:blink 2.2s infinite; }
+@keyframes blink { 0%,100%{opacity:.35} 50%{opacity:1} }
+
+#app { display:none; flex-direction:column; flex:1; overflow:hidden; }
+#app.show { display:flex; }
+
+.app-header { flex-shrink:0; display:flex; align-items:center; gap:8px; padding:0 14px; height:var(--header-h); border-bottom:1.5px solid var(--ink); background:var(--bg); }
+.app-logo     { font-family:var(--serif); font-weight:300; font-size:1.05rem; letter-spacing:0.1em; color:var(--ink); }
+.app-wordmark { font-size:0.65rem; font-weight:300; letter-spacing:0.18em; text-transform:uppercase; color:var(--ink3); }
+.header-actions { margin-left:auto; display:flex; gap:5px; align-items:center; }
+
+.view-toggle { display:flex; gap:0; border:1px solid var(--line); border-radius:4px; overflow:hidden; }
+.view-toggle button { font-family:var(--sans); font-size:0.58rem; font-weight:700; letter-spacing:0.06em; padding:4px 8px; border:none; background:transparent; color:var(--ink3); cursor:pointer; -webkit-tap-highlight-color:transparent; transition:all .15s; }
+.view-toggle button.active { background:var(--charcoal); color:#fff; }
+
+.tab-bar { flex-shrink:0; display:flex; height:var(--tab-h); background:var(--bg2); border-bottom:1px solid var(--line); }
+.tab-btn { flex:1; padding:0 2px; font-family:var(--sans); font-size:0.62rem; font-weight:600; letter-spacing:0.05em; border:none; border-bottom:2px solid transparent; background:transparent; color:var(--ink3); cursor:pointer; transition:all .18s; -webkit-tap-highlight-color:transparent; }
+.tab-btn:hover { color:var(--ink); }
+.tab-btn.active { color:var(--ink); border-bottom-color:var(--ink); background:var(--paper); }
+
+.tab-content { flex:1; overflow:hidden; position:relative; }
+.tab-panel { display:none; position:absolute; inset:0; overflow-y:auto; background:var(--paper); padding:14px; }
+.tab-panel.active { display:flex; flex-direction:column; gap:10px; }
+
+input, textarea, select { font-family:var(--sans); color:var(--ink); background:var(--bg); border:1px solid var(--line); border-radius:5px; transition:border-color .18s; -webkit-appearance:none; }
+input:focus, textarea:focus, select:focus { outline:none; border-color:var(--ink3); }
+::placeholder { color:var(--ink4); }
+
+.btn { font-family:var(--sans); font-size:0.68rem; font-weight:600; letter-spacing:0.06em; text-transform:uppercase; padding:6px 12px; border-radius:4px; border:1px solid var(--line); cursor:pointer; transition:all .18s; background:var(--bg); color:var(--ink2); white-space:nowrap; -webkit-tap-highlight-color:transparent; }
+.btn:hover, .btn:active { background:var(--charcoal); color:#fff; border-color:var(--charcoal); }
+.btn-dark { background:var(--charcoal); color:#fff; border-color:var(--charcoal); }
+.btn-dark:hover, .btn-dark:active { background:var(--ink2); }
+.btn-sm { padding:5px 10px; font-size:0.62rem; }
+.btn-danger { color:#8b3030; border-color:#d4b8b8; }
+.btn-danger:hover, .btn-danger:active { background:#8b3030; color:#fff; border-color:#8b3030; }
+
+.tag { font-size:0.6rem; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; padding:2px 7px; border-radius:2px; }
+.tag-인물 { background:#e2ede0; color:#2d5527; border:1px solid #bdd8b8; }
+.tag-장소 { background:#dde6f0; color:#1a3860; border:1px solid #b8cfe0; }
+.tag-단어 { background:#f0e8db; color:#5a3820; border:1px solid #d8c4a8; }
+.tag-기타 { background:#ebe0f0; color:#3d1a5a; border:1px solid #cdb8e0; }
+
+.cat-filter { display:flex; gap:4px; flex-wrap:wrap; }
+.cat-btn { font-family:var(--sans); font-size:0.62rem; font-weight:600; letter-spacing:0.07em; text-transform:uppercase; padding:5px 10px; border-radius:14px; border:1px solid var(--line); background:transparent; color:var(--ink3); cursor:pointer; transition:all .18s; -webkit-tap-highlight-color:transparent; }
+.cat-btn.sel { background:var(--charcoal); color:#fff; border-color:var(--charcoal); }
+
+.add-form { display:flex; flex-direction:column; gap:8px; background:var(--bg); border:1px solid var(--line); border-radius:var(--r); padding:10px; }
+.add-form-row { display:flex; gap:8px; }
+.add-form select { padding:8px 10px; font-size:0.8rem; flex:0 0 auto; border-radius:5px; }
+.add-form textarea { width:100%; padding:8px 10px; font-size:0.88rem; resize:none; height:72px; border-radius:5px; }
+
+.items-list { display:flex; flex-direction:column; gap:8px; }
+.item-card { background:var(--bg); border:1px solid var(--line); border-radius:var(--r); padding:12px; display:flex; flex-direction:column; gap:6px; }
+.item-header { display:flex; align-items:center; gap:7px; }
+.item-date { font-size:0.6rem; color:var(--ink4); margin-left:auto; }
+.item-body { font-size:0.88rem; line-height:1.7; white-space:pre-wrap; color:var(--ink2); }
+.item-actions { display:flex; gap:6px; }
+.item-edit-area { width:100%; padding:8px 10px; border:1px solid var(--warm2); border-radius:5px; font-size:0.88rem; resize:none; font-family:var(--sans); }
+.empty-msg { text-align:center; color:var(--ink4); font-size:0.8rem; padding:40px 20px; letter-spacing:0.06em; line-height:1.8; }
+
+.desktop-mode .items-list { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+
+#tab-note { padding:0; overflow:hidden; }
+.note-header { flex-shrink:0; background:var(--bg2); border-bottom:1px solid var(--line); padding:8px 12px; display:flex; flex-direction:column; gap:7px; }
+.doc-select-row { display:flex; gap:6px; align-items:center; }
+.doc-select { flex:1; padding:7px 10px; font-size:0.82rem; background:var(--bg); border:1px solid var(--line); border-radius:5px; color:var(--ink); font-family:var(--sans); -webkit-appearance:none; appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='7' viewBox='0 0 11 7'%3E%3Cpath d='M1 1l4.5 4.5L10 1' stroke='%238a847c' stroke-width='1.4' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 9px center; padding-right:26px; min-width:0; }
+.note-editor-controls { display:none; flex-direction:column; gap:7px; }
+.insert-row { display:flex; gap:5px; align-items:center; }
+.insert-select { padding:6px 8px; font-size:0.78rem; background:var(--bg); border:1px solid var(--line); border-radius:5px; color:var(--ink); font-family:var(--sans); -webkit-appearance:none; appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='7' viewBox='0 0 10 7'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%238a847c' stroke-width='1.4' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 7px center; padding-right:20px; min-width:0; overflow:hidden; text-overflow:ellipsis; }
+#insert-cat { flex:0 0 90px; }
+#insert-item { flex:1; }
+.insert-select:disabled { color:var(--ink4); background:var(--bg3); }
+.insert-btn { flex-shrink:0; padding:6px 10px; font-size:0.65rem; }
+.note-title-input { width:100%; padding:7px 10px; font-size:0.9rem; font-weight:600; font-family:var(--serif); border-radius:5px; }
+.note-toolbar { display:flex; gap:5px; align-items:center; }
+.autosave-badge { font-size:0.6rem; color:var(--ink4); white-space:nowrap; margin-left:auto; }
+.note-body { flex:1; overflow:hidden; display:flex; flex-direction:column; }
+.note-no-sel { flex:1; display:flex; align-items:center; justify-content:center; font-size:0.78rem; color:var(--ink4); text-align:center; line-height:1.9; background:var(--paper); }
+.note-textarea { flex:1; width:calc(100% - 24px); padding:18px 20px; margin:0 12px 10px; border:1px solid #c4bdb4; border-radius:5px; font-family:var(--serif); font-size:1rem; line-height:1.9; resize:none; color:var(--ink); background-color:var(--paper); box-shadow:0 2px 8px rgba(0,0,0,0.05); }
+.note-textarea:focus { outline:none; border-color:var(--ink3); }
+.note-textarea::placeholder { color:var(--ink4); font-style:italic; }
+
+.desktop-mode .note-body { flex-direction:row; }
+.desktop-mode .note-textarea { flex:1; margin:10px 6px 10px 12px; }
+.desktop-mode .ver-section { max-height:none; width:260px; border-top:none; border-left:1px solid var(--line); padding:8px 10px 20px; }
+
+.ver-section { flex-shrink:0; max-height:280px; overflow-y:auto; border-top:1px solid var(--line); background:var(--bg2); padding:8px 12px 32px; display:none; flex-direction:column; gap:5px; }
+.ver-section.visible { display:flex; }
+.ver-header { display:flex; align-items:center; gap:6px; margin-bottom:2px; flex-shrink:0; }
+.ver-label { font-size:0.58rem; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:var(--ink4); }
+.ver-card { background:var(--bg); border:1px solid var(--line); border-radius:5px; padding:7px 10px; display:flex; flex-wrap:wrap; align-items:center; gap:4px; flex-shrink:0; }
+.ver-lbl { font-size:0.68rem; font-weight:700; color:var(--ink); }
+.vt { font-size:0.56rem; padding:1px 5px; border-radius:2px; font-weight:700; letter-spacing:0.07em; text-transform:uppercase; }
+.vt-auto   { background:#e0ecd8; color:#2d5527; }
+.vt-manual { background:#dddaf0; color:#2a1a7a; }
+.ver-date { font-size:0.58rem; color:var(--ink4); }
+.ver-preview { font-size:0.67rem; color:var(--ink3); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; width:100%; }
+.ver-btns { display:flex; gap:4px; margin-left:auto; }
+
+.spell-tabs { display:flex; gap:0; }
+.spell-tab { flex:1; padding:8px 4px; border:1px solid var(--line); border-bottom:none; background:var(--bg2); font-size:0.63rem; font-weight:600; letter-spacing:0.05em; color:var(--ink3); cursor:pointer; margin-right:-1px; transition:all .18s; text-align:center; -webkit-tap-highlight-color:transparent; }
+.spell-tab:first-child { border-radius:4px 0 0 0; }
+.spell-tab:last-child  { border-radius:0 4px 0 0; }
+.spell-tab.active { background:var(--paper); color:var(--ink); z-index:1; position:relative; }
+.spell-panel { display:none; flex-direction:column; gap:10px; background:var(--paper); border:1px solid var(--line); border-radius:0 4px 4px 4px; padding:12px; }
+.spell-panel.active { display:flex; }
+.spell-textarea { padding:10px 12px; font-size:0.9rem; line-height:1.8; resize:none; min-height:120px; width:100%; border-radius:var(--r); }
+.spell-links { display:flex; gap:6px; flex-wrap:wrap; }
+.spell-info  { font-size:0.7rem; color:var(--ink3); background:var(--bg); padding:8px 10px; border-radius:5px; line-height:1.65; border:1px solid var(--line); }
+
+.ai-loading { display:flex; align-items:center; gap:8px; font-size:0.78rem; color:var(--ink3); padding:8px 0; }
+.ai-loading-dot { width:6px; height:6px; border-radius:50%; background:var(--ink4); animation:ai-bounce 1.2s infinite; }
+.ai-loading-dot:nth-child(2) { animation-delay:.2s; }
+.ai-loading-dot:nth-child(3) { animation-delay:.4s; }
+@keyframes ai-bounce { 0%,80%,100%{transform:translateY(0)} 40%{transform:translateY(-6px)} }
+.ai-result-box { background:var(--paper); border:1px solid var(--line); border-radius:var(--r); padding:12px 14px; font-family:var(--serif); font-size:0.88rem; line-height:1.85; white-space:pre-wrap; color:var(--ink2); }
+
+.naver-guide-box { background:var(--bg); border:1px solid var(--line); border-radius:var(--r); padding:10px 12px; display:flex; flex-direction:column; gap:6px; }
+.naver-guide-title { font-size:0.65rem; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:var(--ink3); }
+.naver-url-text { font-size:0.72rem; color:var(--ink3); background:var(--bg2); padding:6px 10px; border-radius:4px; word-break:break-all; line-height:1.5; border:1px solid var(--line); font-family:monospace; user-select:all; -webkit-user-select:all; }
+.copy-done { font-size:0.68rem; font-weight:600; color:#4a8a4a; }
+
+.archive-nav { display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+.archive-month-label { font-size:0.78rem; font-weight:700; letter-spacing:0.1em; color:var(--ink); }
+.tl-day-block { display:flex; gap:14px; padding-bottom:16px; }
+.tl-day-left  { width:38px; flex-shrink:0; display:flex; flex-direction:column; align-items:center; padding-top:2px; }
+.tl-day-num   { font-family:var(--serif); font-size:1.25rem; font-weight:400; color:var(--ink); line-height:1; }
+.tl-day-wd    { font-size:0.56rem; font-weight:600; letter-spacing:0.08em; text-transform:uppercase; color:var(--ink4); margin-top:2px; }
+.tl-day-stem  { width:1px; flex:1; background:var(--line); margin-top:5px; }
+.tl-day-right { flex:1; display:flex; flex-direction:column; gap:6px; padding-top:2px; }
+.tl-entry     { background:var(--bg); border:1px solid var(--line); border-radius:6px; padding:8px 10px; }
+.tl-entry-top { display:flex; align-items:center; gap:6px; margin-bottom:3px; flex-wrap:wrap; }
+.tl-entry-time{ font-size:0.6rem; color:var(--ink4); margin-left:auto; }
+.tl-entry-text{ font-family:var(--serif); font-size:0.85rem; line-height:1.65; color:var(--ink2); white-space:pre-wrap; }
+.tl-del-btn   { font-size:0.58rem; color:#8b3030; border:1px solid #d4b8b8; background:transparent; border-radius:3px; padding:2px 6px; cursor:pointer; flex-shrink:0; }
+.tl-del-btn:active { background:#8b3030; color:#fff; }
+.tl-empty     { text-align:center; color:var(--ink4); font-size:0.78rem; padding:32px; letter-spacing:0.05em; }
+
+.desktop-mode #tl-scroll { display:grid; grid-template-columns:1fr 1fr; gap:0 24px; align-items:start; }
+
+.sync-badge { font-size:0.58rem; color:var(--ink4); }
+
+.modal-overlay { display:none; position:fixed; inset:0; background:rgba(28,26,24,0.55); backdrop-filter:blur(4px); z-index:200; align-items:flex-end; justify-content:center; }
+.modal-overlay.open { display:flex; }
+.modal { background:var(--paper); border-radius:16px 16px 0 0; padding:20px 20px 32px; width:100%; max-width:600px; display:flex; flex-direction:column; gap:12px; max-height:80vh; overflow-y:auto; }
+.modal h2 { font-family:var(--sans); font-size:0.82rem; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; }
+.modal p  { font-size:0.75rem; color:var(--ink3); line-height:1.6; }
+.modal-btns { display:flex; gap:6px; flex-wrap:wrap; }
+.modal textarea { width:100%; height:100px; font-size:0.72rem; padding:8px 10px; resize:none; font-family:monospace; border-radius:5px; }
+
+::-webkit-scrollbar { width:3px; }
+::-webkit-scrollbar-track { background:transparent; }
+::-webkit-scrollbar-thumb { background:var(--line); border-radius:10px; }
+</style>
 </head>
 <body>
-  <div id="root"></div>
-  <script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7/babel.min.js"></script>
-  <script type="text/babel">
-const { useState, useEffect, useCallback, useRef } = React;
 
-const T = {
-  bg:"#F5F2EC", card:"#FFFFFF", surface:"#FAFAF7", border:"#E8E3DA",
-  ink:"#1A1A1A", sub:"#6B6B6B", muted:"#ABABAB",
-  soul:"#7C6FF7", body:"#3DAB80", mind:"#B06090",
-  soulBg:"#EFEEFF", bodyBg:"#E6F6EE", mindBg:"#F9EDF4",
-};
-
-const CHECKLIST = {
-  soul:[
-    {id:"s1",label:"성경 읽기",icon:"📖"},
-    {id:"s2",label:"기도 (10분 이상)",icon:"🙏"},
-    {id:"s3",label:"묵상 / 큐티",icon:"✍️"},
-    {id:"s4",label:"찬양 듣기·부르기",icon:"🎵"},
-    {id:"s5",label:"신앙 서적 읽기",icon:"📚"},
-    {id:"s6",label:"예배 또는 공동체 교제",icon:"⛪"},
-    {id:"s7",label:"말씀 암송 또는 필사",icon:"🖊️"},
-  ],
-  body:[
-    {id:"b1",label:"8,000보 이상 걷기",icon:"🚶"},
-    {id:"b2",label:"달리기 / 유산소",icon:"🏃"},
-    {id:"b3",label:"스트레칭 / 근력 운동",icon:"💪"},
-    {id:"b4",label:"채소·단백질 한 끼 이상 챙기기",icon:"🥗"},
-    {id:"b5",label:"물 2L 이상 마시기",icon:"💧"},
-    {id:"b6",label:"충분한 수면 (7h+)",icon:"🌙"},
-    {id:"b7",label:"오후 4시 이후 카페인 끊기",icon:"☕"},
-  ],
-  mind:[
-    {id:"m1",label:"감사 일기 쓰기",icon:"✍️"},
-    {id:"m2",label:"멍 때리기 10분 (의도적 무자극)",icon:"☁️"},
-    {id:"m3",label:"독서 (하루 3장 이상)",icon:"📗"},
-    {id:"m4",label:"그림·글씨·손작업 등 창작",icon:"🎨"},
-    {id:"m5",label:"나에게 따뜻한 말 한마디 쓰기",icon:"💌"},
-    {id:"m6",label:"좋아하는 음악 온전히 감상",icon:"🎧"},
-    {id:"m7",label:"자연 속 산책 또는 바깥 시간",icon:"🌳"},
-  ],
-};
-const CAT = {
-  soul:{label:"영적",      color:T.soul, bg:T.soulBg, emoji:"🙏"},
-  body:{label:"신체",      color:T.body, bg:T.bodyBg, emoji:"🏃"},
-  mind:{label:"멘탈·예술", color:T.mind, bg:T.mindBg, emoji:"🎨"},
-};
-const ALL_ITEMS = [...CHECKLIST.soul,...CHECKLIST.body,...CHECKLIST.mind];
-
-const todayStr = () => {
-  const d = new Date();
-  const y = d.getFullYear();
-  const m = String(d.getMonth()+1).padStart(2,"0");
-  const day = String(d.getDate()).padStart(2,"0");
-  return `${y}-${m}-${day}`;
-};
-const loadDay  = d => { try{ return JSON.parse(localStorage.getItem("whl_"+d)||"{}"); }catch{return{};} };
-const saveDay  = (d,v) => localStorage.setItem("whl_"+d, JSON.stringify(v));
-
-const MISSIONS=[
-  {text:"알림 10분 끄고 창밖 바라보기",        sci:"주의 회복 이론(ART): 자연 자극이 directed attention을 회복시킵니다",    reward:"🌿 잠깐의 고요함이 하루를 바꿨어요."},
-  {text:"물 한 잔, 천천히 맛에 집중하며 마시기", sci:"마음챙김: 감각 집중 시 디폴트 모드 네트워크가 조용해집니다",           reward:"💧 완전한 현존의 순간이었어요."},
-  {text:"감사한 것 3가지 손으로 써보기",         sci:"긍정심리학: 감사 기록은 도파민·세로토닌 경로를 동시에 활성화합니다",    reward:"✍️ 당신의 뇌가 좋음에 주목하기 시작했어요."},
-  {text:"5분 맨발 걷기 또는 스트레칭",          sci:"접지(Grounding): 감각 입력이 자율신경계를 부교감으로 전환합니다",       reward:"🌱 몸이 고마워하고 있어요."},
-  {text:"찬양 1곡을 눈 감고 온전히 듣기",       sci:"음악과 도파민: 기대와 해소 패턴이 쾌감 회로를 건강하게 자극합니다",     reward:"🎵 그 멜로디가 당신 안에 남았습니다."},
-  {text:"20분 SNS 없이 산책하기",              sci:"디지털 단식: 자극 역치가 정상화되어 일상에서 기쁨을 느끼게 됩니다",     reward:"🚶 오늘 당신의 뇌는 조금 더 자유롭습니다."},
-  {text:"성경 한 구절 소리 내어 읽고 묵상",     sci:"의미 기반 보상: 초월적 연결감이 내측전전두피질을 활성화합니다",         reward:"📖 말씀이 당신 안에 심겼습니다."},
-];
-const INSIGHTS=[
-  {title:"도파민 과잉은 역치를 높여 평범한 것들을 무감각하게 만듭니다.",       body:"숏폼·소셜 미디어는 예측 오류 기반 도파민을 과자극합니다.",       kw:"슬로우 도파민",  kb:"— 운동, 독서, 기도, 자연 — 이 진짜 회복의 원천입니다."},
-  {title:"수면 중 뇌는 독소를 청소하고 기억을 정리합니다.",                  body:"7시간 미만 수면은 전전두피질 기능을 떨어뜨려 판단력과 감정 조절을 약화시킵니다.", kw:"깊은 수면", kb:"이 최고의 뇌 회복제입니다."},
-  {title:"감사는 뇌의 구조를 바꿉니다.",                                   body:"감사 일기를 3주 이상 쓰면 내측전전두피질이 두꺼워지고 부정 편향이 줄어드는 것이 MRI로 확인됩니다.", kw:"감사 훈련", kb:"은 가장 저비용 고효율의 멘탈 관리법입니다."},
-  {title:"걷기는 뇌의 창의력 스위치를 켭니다.",                             body:"Stanford 연구에 따르면 걷는 동안 창의적 사고가 앉아있을 때보다 81% 증가합니다.", kw:"야외 걷기", kb:"는 머리를 비우면서 동시에 채웁니다."},
-  {title:"호흡은 의식으로 자율신경계를 조절하는 유일한 방법입니다.",            body:"천천히 내쉬기만으로도 미주신경이 자극되어 스트레스 반응이 즉시 완화됩니다.", kw:"느린 호흡", kb:"은 언제 어디서나 쓸 수 있는 최강의 리셋 도구입니다."},
-  {title:"사회적 연결은 뇌의 통증 회로를 줄여줍니다.",                       body:"고립감은 뇌에서 신체 통증과 동일한 부위를 활성화합니다. 공동체 교제는 선택이 아닌 필수입니다.", kw:"공동체", kb:"안에서 우리는 더 건강해집니다."},
-  {title:"자연은 주의력을 회복시키는 가장 빠른 환경입니다.",                   body:"도시 환경과 달리 자연의 자극은 하향식 주의를 요구하지 않아 뇌가 자발적으로 쉬게 됩니다.", kw:"자연 속 20분", kb:"이 커피 한 잔보다 집중력을 더 오래 유지시킵니다."},
-];
-
-/* ── Components ── */
-function PersonIcon({ soul, body, mind }) {
-  const all = soul&&body&&mind;
-  return (
-    <svg viewBox="0 0 80 100" width="72" height="90" style={{overflow:"visible",display:"block"}}>
-      <defs><filter id="pGlow" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="2.5" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
-      <circle cx="40" cy="14" r="12" fill={soul?T.soul:"#D9D4CA"} style={{transition:"fill .35s"}} filter={soul?"url(#pGlow)":undefined}/>
-      <rect x="22" y="30" width="36" height="28" rx="10" fill={body?T.body:"#D9D4CA"} style={{transition:"fill .35s"}} filter={body?"url(#pGlow)":undefined}/>
-      <rect x="2"  y="32" width="18" height="9" rx="4.5" fill={body?T.body:"#D9D4CA"} style={{transition:"fill .35s"}}/>
-      <rect x="60" y="32" width="18" height="9" rx="4.5" fill={body?T.body:"#D9D4CA"} style={{transition:"fill .35s"}}/>
-      <rect x="24" y="60" width="13" height="30" rx="6.5" fill={mind?T.mind:"#D9D4CA"} style={{transition:"fill .35s"}} filter={mind?"url(#pGlow)":undefined}/>
-      <rect x="43" y="60" width="13" height="30" rx="6.5" fill={mind?T.mind:"#D9D4CA"} style={{transition:"fill .35s"}}/>
-      {soul&&<><circle cx="35" cy="13" r="1.8" fill="white" opacity="0.9"/><circle cx="45" cy="13" r="1.8" fill="white" opacity="0.9"/><path d="M34 19 Q40 23 46 19" stroke="white" strokeWidth="1.4" fill="none" strokeLinecap="round"/></>}
-      {all&&<><circle cx="40" cy="-4" r="2.5" fill={T.soul} opacity="0.9"/><circle cx="14" cy="4" r="1.8" fill={T.mind} opacity="0.8"/><circle cx="66" cy="4" r="1.8" fill={T.body} opacity="0.8"/></>}
-    </svg>
-  );
-}
-
-function CatButton({ meta, active, score, onToggle }) {
-  return (
-    <button onClick={onToggle} style={{flex:1,aspectRatio:"1",background:active?meta.color:"#EDE8E0",borderRadius:18,border:"none",cursor:onToggle?"pointer":"default",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:6,transition:"all .28s cubic-bezier(.34,1.3,.64,1)",transform:active?"translateY(-3px)":"none",boxShadow:active?`0 10px 28px ${meta.color}55`:"none",position:"relative"}}>
-      <div style={{position:"absolute",top:8,right:8,background:active?"rgba(255,255,255,.25)":"rgba(0,0,0,.1)",borderRadius:20,padding:"1px 7px",fontSize:10,fontWeight:700,color:active?"#fff":T.muted}}>{score} / 7</div>
-      <span style={{fontSize:30}}>{meta.emoji}</span>
-      <span style={{fontSize:12,fontWeight:700,color:active?"#fff":T.sub}}>{meta.label}</span>
-    </button>
-  );
-}
-
-function Arc({ score, color, size=44 }) {
-  const r=(size-7)/2,c=size/2,circ=2*Math.PI*r,pct=score/7;
-  return (
-    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-      <circle cx={c} cy={c} r={r} fill="none" stroke={T.border} strokeWidth="4"/>
-      <circle cx={c} cy={c} r={r} fill="none" stroke={color} strokeWidth="4" strokeDasharray={circ} strokeDashoffset={circ*(1-pct)} strokeLinecap="round" transform={`rotate(-90 ${c} ${c})`} style={{transition:"stroke-dashoffset .55s ease"}}/>
-      <text x={c} y={c+1} textAnchor="middle" dominantBaseline="middle" fill={pct>0?color:T.muted} fontSize="12" fontWeight="700">{score}</text>
-    </svg>
-  );
-}
-
-function CheckItem({ item, checked, color, bg, onToggle, readonly }) {
-  return (
-    <button onClick={readonly?undefined:onToggle} style={{display:"flex",alignItems:"center",gap:11,width:"100%",padding:"10px 12px",background:checked?bg:"transparent",border:`1px solid ${checked?color+"50":T.border}`,borderRadius:11,cursor:readonly?"default":"pointer",transition:"all .18s"}}>
-      <div style={{width:19,height:19,borderRadius:5,flexShrink:0,background:checked?color:"transparent",border:`1.8px solid ${checked?color:T.muted}`,display:"flex",alignItems:"center",justifyContent:"center",transition:"all .18s",boxShadow:checked?`0 0 8px ${color}44`:"none"}}>
-        {checked&&<svg width="9" height="7" viewBox="0 0 9 7"><path d="M1 3.5L3.2 5.8L8 1" stroke="white" strokeWidth="1.7" fill="none" strokeLinecap="round" strokeLinejoin="round"/></svg>}
-      </div>
-      <span style={{fontSize:11,color:T.muted,flexShrink:0}}>{item.icon}</span>
-      <span style={{fontSize:13,color:checked?T.ink:T.sub,fontWeight:checked?600:400,textAlign:"left",transition:"color .18s"}}>{item.label}</span>
-    </button>
-  );
-}
-
-function MiniCalendar({ selected, onSelect }) {
-  const [vy,setVy]=useState(new Date().getFullYear());
-  const [vm,setVm]=useState(new Date().getMonth());
-  const first=new Date(vy,vm,1).getDay(), days=new Date(vy,vm+1,0).getDate(), today=todayStr();
-  const getInfo=d=>{
-    const ds=`${vy}-${String(vm+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
-    const data=loadDay(ds);
-    const done=ALL_ITEMS.filter(i=>data[i.id]).length;
-    const catDone=["soul","body","mind"].filter(c=>CHECKLIST[c].some(i=>data[i.id])).length;
-    const catBtnDone=[data.__soulOn,data.__bodyOn,data.__mindOn].filter(Boolean).length;
-    return {ds,done,catDone,catBtnDone};
-  };
-  return (
-    <div style={{background:T.card,borderRadius:20,padding:"16px 14px",border:`1px solid ${T.border}`,boxShadow:"0 2px 12px rgba(0,0,0,.06)"}}>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
-        <button onClick={()=>{let m=vm-1,y=vy;if(m<0){m=11;y--;}setVm(m);setVy(y);}} style={{background:"none",border:"none",color:T.sub,cursor:"pointer",fontSize:17,padding:"2px 10px"}}>‹</button>
-        <span style={{fontSize:13,fontWeight:700,color:T.ink}}>{new Date(vy,vm).toLocaleDateString("ko-KR",{year:"numeric",month:"long"})}</span>
-        <button onClick={()=>{let m=vm+1,y=vy;if(m>11){m=0;y++;}setVm(m);setVy(y);}} style={{background:"none",border:"none",color:T.sub,cursor:"pointer",fontSize:17,padding:"2px 10px"}}>›</button>
-      </div>
-      <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:1,marginBottom:4}}>
-        {["일","월","화","수","목","금","토"].map(d=><div key={d} style={{textAlign:"center",fontSize:9,color:T.muted,padding:"2px 0"}}>{d}</div>)}
-      </div>
-      <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:1}}>
-        {Array.from({length:first}).map((_,i)=><div key={`e${i}`}/>)}
-        {Array.from({length:days},(_,i)=>i+1).map(d=>{
-          const {ds,done,catDone,catBtnDone}=getInfo(d);
-          const isSel=ds===selected,isT=ds===today;
-          return (
-            <button key={d} onClick={()=>onSelect(ds)} style={{aspectRatio:"1",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:1.5,borderRadius:8,border:"none",cursor:"pointer",background:isSel?T.soul:isT?`${T.soul}15`:"transparent",outline:isT&&!isSel?`1.5px solid ${T.soul}50`:"none",position:"relative"}}>
-              <span style={{fontSize:11,fontWeight:isSel||isT?700:400,color:isSel?"#fff":isT?T.soul:T.sub}}>{d}</span>
-              {!isSel&&done>0&&(
-                <div style={{display:"flex",gap:1.5,alignItems:"center"}}>
-                  {catDone>=1&&<div style={{width:3,height:3,borderRadius:"50%",background:T.soul,opacity:.9}}/>}
-                  {catDone>=2&&<div style={{width:3,height:3,borderRadius:"50%",background:T.body,opacity:.9}}/>}
-                  {catDone>=3&&<div style={{width:3,height:3,borderRadius:"50%",background:T.mind,opacity:.9}}/>}
-                </div>
-              )}
-              {!isSel&&catBtnDone>0&&<div style={{position:"absolute",top:2,right:2,width:5,height:5,borderRadius:"50%",background:catBtnDone===3?"#FFD700":T.soul,boxShadow:catBtnDone===3?"0 0 4px #FFD70088":"none"}}/>}
-            </button>
-          );
-        })}
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">글짓기</div>
+    <div class="login-sub">글감 바구니</div>
+    <div class="login-form">
+      <input type="email" id="login-email" placeholder="이메일" autocomplete="email">
+      <input type="password" id="login-pw" placeholder="비밀번호" autocomplete="current-password">
+      <button class="login-btn" id="login-btn" onclick="doLogin()">로그인</button>
+      <button class="login-btn" id="signup-btn" onclick="doSignup()" style="background:var(--ink3);display:none;">회원가입</button>
+      <div class="login-err" id="login-err"></div>
+      <div style="text-align:center;">
+        <span class="login-toggle" id="login-toggle" onclick="toggleMode()">계정이 없으신가요? 회원가입</span>
       </div>
     </div>
-  );
-}
+  </div>
+</div>
 
-function ShareCardEl({ dateStr, dayData, soulOn, bodyOn, mindOn, ss, bs, ms }) {
-  const date=new Date(dateStr+"T12:00:00").toLocaleDateString("ko-KR",{month:"long",day:"numeric",weekday:"short"});
-  const total=ss+bs+ms, allOn=soulOn&&bodyOn&&mindOn;
-  return (
-    <div style={{width:"100%",padding:"28px 24px",background:"linear-gradient(150deg,#1C1624 0%,#122018 55%,#1C1624 100%)",borderRadius:28,color:"#fff",position:"relative",overflow:"hidden"}}>
-      <div style={{position:"absolute",top:16,right:20,opacity:.07}}>{[0,1,2,3,4].map(r=><div key={r} style={{display:"flex",gap:8,marginBottom:8}}>{[0,1,2,3,4].map(c=><div key={c} style={{width:3,height:3,borderRadius:"50%",background:"#fff"}}/>)}</div>)}</div>
-      <div style={{fontSize:9,letterSpacing:".2em",color:"rgba(255,255,255,.4)",marginBottom:4}}>WHOLENESS · 영육강건</div>
-      <div style={{fontSize:21,fontWeight:800,letterSpacing:"-.02em",marginBottom:2}}>{date}</div>
-      {allOn?<div style={{fontSize:12,color:"rgba(255,255,255,.5)",marginBottom:20,fontStyle:"italic"}}>🎉 오늘 하루 온전합니다!</div>:<div style={{fontSize:12,color:"rgba(255,255,255,.4)",marginBottom:20}}>{total} / 21점 · 오늘도 한 걸음씩</div>}
-      <div style={{display:"flex",gap:8,marginBottom:18}}>
-        {[["soul","영혼",T.soul,soulOn,ss],["body","신체",T.body,bodyOn,bs],["mind","마음",T.mind,mindOn,ms]].map(([cat,lbl,col,on,s])=>(
-          <div key={cat} style={{flex:1,background:on?"rgba(255,255,255,.12)":"rgba(255,255,255,.05)",borderRadius:14,padding:"12px 8px",textAlign:"center",border:`1px solid ${on?col+"50":"rgba(255,255,255,.08)"}`}}>
-            <div style={{fontSize:22,fontWeight:900,color:on?col:"rgba(255,255,255,.3)",lineHeight:1}}>{s}</div>
-            <div style={{fontSize:9,color:"rgba(255,255,255,.45)",marginTop:3}}>{lbl} / 7</div>
+<div id="view-wrap">
+
+<div id="splash" onclick="enterApp()">
+  <div class="splash-logo">글짓기</div>
+  <svg viewBox="0 0 320 100" xmlns="http://www.w3.org/2000/svg" style="width:min(320px,85vw);height:auto;margin-top:56px;">
+    <defs>
+      <filter id="charcoal" x="-10%" y="-40%" width="120%" height="180%">
+        <feTurbulence type="fractalNoise" baseFrequency="0.028 0.012" numOctaves="6" seed="21" result="n1"/>
+        <feDisplacementMap in="SourceGraphic" in2="n1" scale="4.5" xChannelSelector="R" yChannelSelector="G" result="d1"/>
+        <feTurbulence type="turbulence" baseFrequency="0.09 0.05" numOctaves="3" seed="5" result="n2"/>
+        <feDisplacementMap in="d1" in2="n2" scale="2.0" xChannelSelector="G" yChannelSelector="R" result="d2"/>
+        <feTurbulence type="fractalNoise" baseFrequency="0.18 0.14" numOctaves="2" seed="33" result="n3"/>
+        <feDisplacementMap in="d2" in2="n3" scale="0.9" xChannelSelector="R" yChannelSelector="G"/>
+      </filter>
+    </defs>
+    <path d="M 12 18 C 20 22 34 46 52 64 C 76 86 110 96 160 97 C 210 96 244 86 268 64 C 286 46 300 22 308 18" fill="none" stroke="#3a3530" stroke-width="7" stroke-linecap="round" filter="url(#charcoal)" opacity="0.28"/>
+    <path d="M 12 18 C 20 22 34 46 52 64 C 76 86 110 96 160 97 C 210 96 244 86 268 64 C 286 46 300 22 308 18" fill="none" stroke="#2a2720" stroke-width="4.2" stroke-linecap="round" stroke-dasharray="1,0,3,0,2,0.3,1.5,0,4,0.4,0.8,0.2,3,0,2.5,0.3" filter="url(#charcoal)" opacity="0.84"/>
+    <path d="M 4 14 C 7 15 10 16 12 18" fill="none" stroke="#2a2720" stroke-width="1.6" stroke-linecap="round" filter="url(#charcoal)" opacity="0.55"/>
+    <path d="M 308 18 C 310 16 314 15 318 14" fill="none" stroke="#2a2720" stroke-width="1.6" stroke-linecap="round" filter="url(#charcoal)" opacity="0.55"/>
+    <g id="papers"></g>
+  </svg>
+  <div id="splash-count" class="splash-count"></div>
+  <div class="splash-hint">tap to enter</div>
+</div>
+
+<div id="app">
+  <div class="app-header">
+    <span class="app-logo">글짓기</span>
+    <span class="app-wordmark" style="display:none;" id="wordmark">글감 바구니</span>
+    <div class="header-actions">
+      <span class="sync-badge" id="sync-badge"></span>
+      <div class="view-toggle">
+        <button id="vt-mobile" class="active" onclick="setView('mobile')">모바일</button>
+        <button id="vt-desktop" onclick="setView('desktop')">데스크톱</button>
+      </div>
+      <button onclick="goSplash()" style="background:none;border:none;padding:0;cursor:pointer;font-size:1.2rem;line-height:1;filter:grayscale(1) opacity(0.5);display:flex;align-items:center;gap:3px;-webkit-tap-highlight-color:transparent;">🧺<span id="home-badge" style="display:none;min-width:14px;height:14px;background:#2c2a26;color:#fff;font-size:0.52rem;font-weight:700;border-radius:7px;align-items:center;justify-content:center;padding:0 3px;line-height:1;font-family:sans-serif;"></span></button>
+      <button class="btn btn-sm btn-danger" onclick="doLogout()">로그아웃</button>
+    </div>
+  </div>
+
+  <div class="tab-bar">
+    <button class="tab-btn active" onclick="switchTab('basket',this)">바구니</button>
+    <button class="tab-btn" onclick="switchTab('note',this)">노트</button>
+    <button class="tab-btn" onclick="switchTab('spell',this)">다듬기</button>
+    <button class="tab-btn" onclick="switchTab('archive',this)">아카이브</button>
+  </div>
+
+  <div class="tab-content">
+
+    <div id="tab-basket" class="tab-panel active">
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <div class="cat-filter">
+          <button class="cat-btn sel" data-cat="all" onclick="filterCat(this)">전체</button>
+          <button class="cat-btn" data-cat="인물" onclick="filterCat(this)">인물</button>
+          <button class="cat-btn" data-cat="장소" onclick="filterCat(this)">장소</button>
+          <button class="cat-btn" data-cat="단어" onclick="filterCat(this)">단어</button>
+          <button class="cat-btn" data-cat="기타" onclick="filterCat(this)">기타</button>
+        </div>
+        <span id="basket-count" style="margin-left:auto;font-size:0.62rem;color:var(--ink4);"></span>
+      </div>
+      <div class="add-form">
+        <div class="add-form-row">
+          <select id="new-cat" style="font-size:0.82rem;padding:7px 8px;">
+            <option value="인물">인물</option>
+            <option value="장소">장소</option>
+            <option value="단어" selected>단어·표현</option>
+            <option value="기타">기타</option>
+          </select>
+          <button class="btn btn-dark" onclick="addItem()" style="flex-shrink:0;">추가</button>
+        </div>
+        <textarea id="new-content" placeholder="새 글감을 입력하세요…" onkeydown="if((e=event).key==='Enter'&&(e.ctrlKey||e.metaKey))addItem()"></textarea>
+      </div>
+      <div class="items-list" id="items-list"></div>
+    </div>
+
+    <div id="tab-note" class="tab-panel">
+      <div class="note-header">
+        <div class="doc-select-row">
+          <select id="doc-select" class="doc-select" onchange="onDocSelectChange()">
+            <option value="">— 글을 선택하세요 —</option>
+          </select>
+          <button class="btn btn-dark btn-sm" onclick="newDoc()" style="flex-shrink:0;">＋ 새 글</button>
+        </div>
+        <div class="note-editor-controls" id="note-editor-controls">
+          <div class="insert-row">
+            <select id="insert-cat" class="insert-select" onchange="updateInsertItems()">
+              <option value="">카테고리</option>
+              <option value="인물">인물</option>
+              <option value="장소">장소</option>
+              <option value="단어">단어·표현</option>
+              <option value="기타">기타</option>
+            </select>
+            <select id="insert-item" class="insert-select" disabled><option value="">글감 선택</option></select>
+            <button class="btn btn-dark insert-btn" onclick="doInsertNote()">삽입</button>
           </div>
-        ))}
+          <input type="text" class="note-title-input" id="doc-title" placeholder="제목…" oninput="onDocTitleInput()">
+          <div class="note-toolbar">
+            <button class="btn btn-dark btn-sm" onclick="saveDoc()">저장</button>
+            <button class="btn btn-sm" onclick="copyDoc()">복사</button>
+            <button class="btn btn-sm btn-danger" onclick="deleteDoc()">글 삭제</button>
+            <span class="autosave-badge" id="autosave-badge">—</span>
+          </div>
+        </div>
       </div>
-      <div style={{display:"flex",flexWrap:"wrap",gap:4,marginBottom:16}}>{ALL_ITEMS.filter(i=>dayData[i.id]).map(i=><span key={i.id} style={{fontSize:9,padding:"3px 8px",background:"rgba(255,255,255,.09)",borderRadius:20,color:"rgba(255,255,255,.55)"}}>{i.icon} {i.label}</span>)}</div>
-      <div style={{fontSize:9,color:"rgba(255,255,255,.2)",textAlign:"right"}}>#영육강건 #wholeness #온전한하루 #하루결</div>
+      <div class="note-body">
+        <div class="note-no-sel" id="note-no-sel">위에서 글을 선택하거나<br>새 글을 만들어보세요</div>
+        <textarea class="note-textarea" id="note-area" placeholder="여기에 글을 써주세요…" style="display:none;" oninput="onNoteInput()"></textarea>
+        <div class="ver-section" id="ver-section">
+          <div class="ver-header">
+            <span class="ver-label">버전 기록</span>
+            <span style="font-size:0.58rem;color:var(--ink4);">저장 이력</span>
+          </div>
+          <div id="version-list"></div>
+        </div>
+      </div>
     </div>
-  );
+
+    <div id="tab-spell" class="tab-panel">
+      <div class="spell-tabs">
+        <button class="spell-tab active" onclick="switchSpellTab('copy',this)">📋 복붙용</button>
+        <button class="spell-tab" onclick="switchSpellTab('ai',this)">✨ AI 교정</button>
+        <button class="spell-tab" onclick="switchSpellTab('naver',this)">🔍 맞춤법</button>
+      </div>
+      <div id="spell-copy" class="spell-panel active">
+        <p style="font-size:0.78rem;color:var(--ink3);">완성된 글을 가져와 복사한 뒤 인스타그램·브런치 등에 붙여넣으세요.</p>
+        <textarea class="spell-textarea" id="spell-copy-area" placeholder="여기에 글을 붙여넣거나 노트에서 가져오세요…"></textarea>
+        <div class="spell-links">
+          <button class="btn btn-dark" onclick="copyTextFull('spell-copy-area')" style="flex:1;">전체 복사</button>
+          <button class="btn" onclick="importToSpell('spell-copy-area')">노트에서 가져오기</button>
+          <button class="btn" onclick="el('spell-copy-area').value=''">지우기</button>
+        </div>
+        <div class="spell-info">인스타그램·브런치·블로그에 올릴 글을 최종 다듬은 후 복사해 사용하세요.</div>
+      </div>
+      <div id="spell-ai" class="spell-panel">
+        <p style="font-size:0.78rem;color:var(--ink3);">Claude가 맞춤법·문장을 교정하고 자연스럽게 다듬어드립니다.</p>
+        <textarea class="spell-textarea" id="spell-ai-area" placeholder="교정받을 글을 붙여넣거나 노트에서 가져오세요…"></textarea>
+        <div class="spell-links">
+          <button class="btn btn-dark" onclick="runAISpell()" style="flex:1;" id="ai-spell-btn">✨ AI 교정 실행</button>
+          <button class="btn" onclick="importToSpell('spell-ai-area')">노트에서 가져오기</button>
+          <button class="btn" onclick="clearAIResult()">지우기</button>
+        </div>
+        <div id="ai-loading" class="ai-loading" style="display:none;">
+          <div class="ai-loading-dot"></div><div class="ai-loading-dot"></div><div class="ai-loading-dot"></div>
+          <span>교정 중…</span>
+        </div>
+        <div id="ai-spell-result" class="ai-result-box" style="display:none;"></div>
+        <div id="ai-spell-copy-row" class="spell-links" style="display:none;">
+          <button class="btn" onclick="copyElem('ai-spell-result')" style="flex:1;">결과 복사</button>
+          <button class="btn btn-dark" onclick="applyAIResult()">노트에 적용</button>
+        </div>
+        <div class="spell-info">앱 내부에서 바로 교정 결과를 받아요.</div>
+      </div>
+      <div id="spell-naver" class="spell-panel">
+        <p style="font-size:0.78rem;color:var(--ink3);">네이버 맞춤법 검사기로 띄어쓰기·맞춤법을 확인하세요.</p>
+        <textarea class="spell-textarea" id="spell-ext-area" placeholder="검사할 글을 붙여넣거나 노트에서 가져오세요…"></textarea>
+        <div class="spell-links">
+          <button class="btn btn-dark" onclick="copyForNaver()" style="flex:1;">① 글 복사하기</button>
+          <button class="btn" onclick="importToSpell('spell-ext-area')">노트에서 가져오기</button>
+        </div>
+        <span id="naver-copy-done" class="copy-done" style="display:none;">✓ 복사됐어요!</span>
+        <div class="naver-guide-box">
+          <div class="naver-guide-title">② 아래 주소를 새 탭에서 열어주세요</div>
+          <div class="naver-url-text">https://search.naver.com/search.naver?where=nexearch&query=맞춤법+검사기</div>
+          <div style="display:flex;align-items:center;gap:8px;margin-top:6px;">
+            <button class="btn btn-sm" onclick="copyNaverUrl()">주소 복사</button>
+            <span id="naver-url-done" class="copy-done" style="display:none;">✓ 복사됐어요!</span>
+          </div>
+        </div>
+        <div class="spell-info">① 글 복사 → ② 주소를 새 탭에서 열기 → 검사기에 붙여넣기</div>
+      </div>
+    </div>
+
+    <div id="tab-archive" class="tab-panel">
+      <div class="archive-nav">
+        <button class="btn btn-sm" onclick="changeArchiveMonth(-1)">←</button>
+        <span class="archive-month-label" id="archive-month-label"></span>
+        <button class="btn btn-sm" onclick="changeArchiveMonth(1)">→</button>
+        <span style="margin-left:auto;font-size:0.62rem;color:var(--ink4);" id="archive-count"></span>
+      </div>
+      <div id="tl-scroll"></div>
+    </div>
+
+  </div>
+</div>
+</div>
+
+<div class="modal-overlay" id="modal-overlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <h2 id="modal-title"></h2>
+    <p id="modal-desc"></p>
+    <textarea id="modal-ta"></textarea>
+    <div class="modal-btns" id="modal-btns"></div>
+  </div>
+</div>
+
+<script>
+const SUPA_URL = 'https://twuvusjliabfuyompask.supabase.co';
+const SUPA_KEY = 'sb_publishable_7ARC133ruOGCb6Y8KVOFwQ_q-bax4Ou';
+const { createClient } = supabase;
+const sb = createClient(SUPA_URL, SUPA_KEY);
+
+const WD = ['SUN','MON','TUE','WED','THU','FRI','SAT'];
+let S = { items:[], docs:[], filterCat:'all' };
+let curDocId = null;
+let autoTimer = null, lastAutoBody = '';
+let archY = new Date().getFullYear(), archM = new Date().getMonth();
+let lastAIResult = '';
+let currentUser = null;
+let isSignupMode = false;
+
+function el(id) { return document.getElementById(id); }
+
+function setView(v) {
+  localStorage.setItem('glgam_view', v);
+  document.body.classList.toggle('desktop-mode', v === 'desktop');
+  el('vt-mobile').classList.toggle('active', v === 'mobile');
+  el('vt-desktop').classList.toggle('active', v === 'desktop');
+  el('wordmark').style.display = v === 'desktop' ? 'inline' : 'none';
+}
+function initView() {
+  const v = localStorage.getItem('glgam_view') || 'mobile';
+  setView(v);
 }
 
-function ApiKeySection() {
-  const [key,setKey]=useState(localStorage.getItem("whl_apikey")||"");
-  const [saved,setSaved]=useState(false);
-  const save=()=>{ key.trim()?localStorage.setItem("whl_apikey",key.trim()):localStorage.removeItem("whl_apikey"); setSaved(true); setTimeout(()=>setSaved(false),2000); };
-  return (
-    <div style={{background:T.card,borderRadius:20,padding:"20px 18px",border:`1px solid ${T.border}`,boxShadow:"0 1px 8px rgba(0,0,0,.04)"}}>
-      <div style={{fontSize:10,letterSpacing:".14em",color:T.muted,marginBottom:12}}>⚙️ AI 식단 생성 설정</div>
-      <div style={{fontSize:12,color:T.sub,lineHeight:1.7,marginBottom:12}}>Anthropic API 키를 저장하면 AI 식단 플래너를 사용할 수 있어요.<br/>키는 이 기기 로컬에만 저장돼요.</div>
-      <div style={{display:"flex",gap:8,marginBottom:8}}>
-        <input type="password" value={key} onChange={e=>setKey(e.target.value)} onKeyDown={e=>e.key==="Enter"&&save()} placeholder="sk-ant-api03-..." style={{flex:1,padding:"10px 12px",borderRadius:10,border:`1px solid ${T.border}`,background:T.surface,fontSize:12,fontFamily:"Pretendard,sans-serif",color:T.ink,outline:"none"}}/>
-        <button onClick={save} style={{padding:"10px 16px",background:T.soul,color:"#fff",border:"none",borderRadius:10,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"Pretendard,sans-serif",whiteSpace:"nowrap",boxShadow:`0 3px 10px ${T.soul}44`}}>{saved?"✓ 저장됨":"저장"}</button>
-      </div>
-      <div style={{fontSize:10,color:T.muted}}>API 키 발급 → <a href="https://console.anthropic.com" target="_blank" style={{color:T.soul,fontWeight:600}}>console.anthropic.com</a></div>
-    </div>
-  );
+function toggleMode() {
+  isSignupMode = !isSignupMode;
+  el('login-btn').style.display = isSignupMode ? 'none' : 'block';
+  el('signup-btn').style.display = isSignupMode ? 'block' : 'none';
+  el('login-toggle').textContent = isSignupMode ? '이미 계정이 있으신가요? 로그인' : '계정이 없으신가요? 회원가입';
+  el('login-err').textContent = '';
 }
 
-/* ══════════════ APP ══════════════ */
-function App() {
-  const [tab,setTab]           = useState("today");
-  const [selDate,setSelDate]   = useState(todayStr());
-  const [showCal,setShowCal]   = useState(false);
-  // ★ 핵심: 날짜별 모든 데이터를 dayData 하나로 관리
-  const [dayData,setDayData]   = useState(()=>loadDay(todayStr()));
-  const [showShare,setShowShare] = useState(false);
-  const [saving,setSaving]     = useState(false);
-  const [saveMsg,setSaveMsg]   = useState("");
-  const [missionDone,setMissionDone] = useState(false);
-  const [showReward,setShowReward]   = useState(false);
-  const [ingredients,setIngredients] = useState("");
-  const [mealPlan,setMealPlan] = useState(()=>{ try{const s=localStorage.getItem("whl_mealplan");return s?JSON.parse(s):null;}catch{return null;} });
-  const [loadingMeal,setLoadingMeal] = useState(false);
-  const [mealError,setMealError]     = useState("");
-  const [backupMsg,setBackupMsg]     = useState("");
-  const [restoreMsg,setRestoreMsg]   = useState("");
-  const shareRef    = useRef(null);
-  const mealCardRef = useRef(null);
-  const fileInputRef = useRef(null);
-  const [savingMeal,setSavingMeal] = useState(false);
-  const [mealSaveMsg,setMealSaveMsg] = useState("");
+async function doLogin() {
+  const email = el('login-email').value.trim();
+  const pw = el('login-pw').value;
+  if (!email || !pw) { el('login-err').textContent = '이메일과 비밀번호를 입력해주세요.'; return; }
+  el('login-btn').textContent = '로그인 중…'; el('login-btn').disabled = true;
+  const { data, error } = await sb.auth.signInWithPassword({ email, password: pw });
+  el('login-btn').textContent = '로그인'; el('login-btn').disabled = false;
+  if (error) { el('login-err').textContent = error.message; return; }
+  onLogin(data.user);
+}
 
-  const isToday  = selDate===todayStr();
-  const readonly = !isToday;
-  const mission  = MISSIONS[new Date().getDay()];
-  const insight  = INSIGHTS[new Date().getDay()];
-  const dateLabel = isToday?"오늘":new Date(selDate+"T12:00:00").toLocaleDateString("ko-KR",{month:"long",day:"numeric",weekday:"short"});
+async function doSignup() {
+  const email = el('login-email').value.trim();
+  const pw = el('login-pw').value;
+  if (!email || !pw) { el('login-err').textContent = '이메일과 비밀번호를 입력해주세요.'; return; }
+  if (pw.length < 6) { el('login-err').textContent = '비밀번호는 6자 이상이어야 해요.'; return; }
+  el('signup-btn').textContent = '가입 중…'; el('signup-btn').disabled = true;
+  const { data, error } = await sb.auth.signUp({ email, password: pw });
+  el('signup-btn').textContent = '회원가입'; el('signup-btn').disabled = false;
+  if (error) { el('login-err').textContent = error.message; return; }
+  el('login-err').style.color = '#4a8a4a';
+  el('login-err').textContent = '가입 완료! 이메일을 확인해 인증 후 로그인해주세요.';
+}
 
-  // ★ 날짜 바뀌면 해당 날 데이터 로드
-  useEffect(()=>{
-    setDayData(loadDay(selDate));
-    setShowShare(false);
-  },[selDate]);
+async function doLogout() {
+  await sb.auth.signOut();
+  currentUser = null;
+  S = { items:[], docs:[], filterCat:'all' };
+  curDocId = null;
+  el('app').classList.remove('show'); el('app').style.display = 'none';
+  el('splash').style.display = 'none';
+  el('login-screen').style.display = 'flex';
+  el('login-err').textContent = ''; el('login-err').style.color = '#8b3030';
+}
 
-  // ★ dayData 바뀌면 저장 (오늘만)
-  useEffect(()=>{
-    if(!readonly) saveDay(selDate,dayData);
-  },[dayData]);
+async function onLogin(user) {
+  currentUser = user;
+  el('login-screen').style.display = 'none';
+  await loadFromSupabase();
+  drawPapers(); renderItems(); renderDocSelect(); updateHomeBadge(); startAutoSave();
+  el('splash').style.display = 'flex';
+}
 
-  // ★ 편의 접근자 — checks/soulOn 등은 dayData에서 직접 파생
-  const soulOn = !!dayData.__soulOn;
-  const bodyOn = !!dayData.__bodyOn;
-  const mindOn = !!dayData.__mindOn;
-  const setSoulOn = v => !readonly && setDayData(p=>({...p,__soulOn:!!v}));
-  const setBodyOn = v => !readonly && setDayData(p=>({...p,__bodyOn:!!v}));
-  const setMindOn = v => !readonly && setDayData(p=>({...p,__mindOn:!!v}));
-  const toggle    = id => !readonly && setDayData(p=>({...p,[id]:!p[id]}));
+function syncBadge(msg) {
+  const b = el('sync-badge'); b.textContent = msg;
+  if (msg === '✓ 동기화됨') setTimeout(() => { b.textContent = ''; }, 2000);
+}
 
-  const score = cat => CHECKLIST[cat].filter(i=>dayData[i.id]).length;
-  const ss=score("soul"), bs=score("body"), ms=score("mind");
-  const allOn=soulOn&&bodyOn&&mindOn, anyOn=soulOn||bodyOn||mindOn;
+async function loadFromSupabase() {
+  syncBadge('불러오는 중…');
+  const uid = currentUser.id;
+  const [{ data: items }, { data: docs }] = await Promise.all([
+    sb.from('items').select('*').eq('user_id', uid).order('id', { ascending: false }),
+    sb.from('docs').select('*').eq('user_id', uid).order('id', { ascending: false })
+  ]);
+  S.items = (items || []).map(r => ({ id:r.id, cat:r.cat, content:r.content, date:r.date, dateKey:r.date_key }));
+  S.docs  = (docs  || []).map(r => ({ id:r.id, title:r.title, body:r.body, versions:r.versions||[], createdAt:r.created_at, updatedAt:r.updated_at }));
+  syncBadge('✓ 동기화됨');
+}
 
-  const saveImage = async () => {
-    if(!shareRef.current)return; setSaving(true);
-    try {
-      if(!window.html2canvas){ await new Promise((res,rej)=>{ const s=document.createElement("script"); s.src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"; s.onload=res; s.onerror=rej; document.head.appendChild(s); }); }
-      const canvas=await window.html2canvas(shareRef.current,{scale:3,useCORS:true,backgroundColor:null,logging:false});
-      const url=canvas.toDataURL("image/png"); const a=document.createElement("a"); a.href=url; a.download=`wholeness_${selDate}.png`; a.click();
-      setSaveMsg("✓ 저장 완료! 갤러리에서 확인하세요.");
-    } catch{ setSaveMsg("이미지를 길게 눌러 저장하세요."); }
-    setSaving(false); setTimeout(()=>setSaveMsg(""),3500);
-  };
+async function sbUpsertItem(item) {
+  await sb.from('items').upsert({ id:item.id, user_id:currentUser.id, cat:item.cat, content:item.content, date:item.date, date_key:item.dateKey });
+}
+async function sbDeleteItem(id) {
+  await sb.from('items').delete().eq('id', id).eq('user_id', currentUser.id);
+}
+async function sbUpsertDoc(doc) {
+  await sb.from('docs').upsert({ id:doc.id, user_id:currentUser.id, title:doc.title, body:doc.body, versions:doc.versions, updated_at:new Date().toISOString() });
+}
+async function sbDeleteDoc(id) {
+  await sb.from('docs').delete().eq('id', id).eq('user_id', currentUser.id);
+}
 
-  const saveMealImage = async () => {
-    if(!mealCardRef.current)return; setSavingMeal(true);
-    try {
-      if(!window.html2canvas){ await new Promise((res,rej)=>{ const s=document.createElement("script"); s.src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"; s.onload=res; s.onerror=rej; document.head.appendChild(s); }); }
-      const canvas=await window.html2canvas(mealCardRef.current,{scale:3,useCORS:true,backgroundColor:"#FFFFFF",logging:false});
-      const url=canvas.toDataURL("image/png"); const a=document.createElement("a"); a.href=url; a.download=`wholeness_meal_${todayStr()}.png`; a.click();
-      setMealSaveMsg("✓ 식단 이미지 저장 완료!");
-    } catch{ setMealSaveMsg("이미지를 길게 눌러 저장하세요."); }
-    setSavingMeal(false); setTimeout(()=>setMealSaveMsg(""),3500);
-  };
-
-  const exportBackup = () => {
-    const data={}; Object.keys(localStorage).filter(k=>k.startsWith("whl_")).forEach(k=>{data[k]=localStorage.getItem(k);});
-    const blob=new Blob([JSON.stringify({version:1,exportedAt:new Date().toISOString(),records:data},null,2)],{type:"application/json"});
-    const url=URL.createObjectURL(blob); const a=document.createElement("a"); a.href=url; a.download=`wholeness_backup_${todayStr()}.json`; a.click(); URL.revokeObjectURL(url);
-    setBackupMsg("✓ 백업 파일이 저장됐어요!"); setTimeout(()=>setBackupMsg(""),3000);
-  };
-
-  const exportEmail = () => {
-    const data={}; Object.keys(localStorage).filter(k=>k.startsWith("whl_")).forEach(k=>{data[k]=localStorage.getItem(k);});
-    window.open(`mailto:?subject=${encodeURIComponent("온전한 하루 백업 데이터")}&body=${encodeURIComponent("아래 JSON을 복사해서 복구 시 사용하세요.\n\n"+JSON.stringify({version:1,exportedAt:new Date().toISOString(),records:data}))}`);
-  };
-
-  const importBackup = e => {
-    const file=e.target.files[0]; if(!file)return;
-    const reader=new FileReader();
-    reader.onload=ev=>{
-      try {
-        const parsed=JSON.parse(ev.target.result);
-        const records=parsed.records||parsed;
-        let count=0;
-        Object.entries(records).forEach(([k,v])=>{ if(k.startsWith("whl_")){localStorage.setItem(k,v);count++;} });
-        const t=todayStr(); setSelDate(t); setDayData(loadDay(t));
-        setRestoreMsg(`✓ ${count}일치 기록이 복구됐어요!`);
-      } catch{ setRestoreMsg("파일 형식이 올바르지 않아요."); }
-      setTimeout(()=>setRestoreMsg(""),5000);
+function drawPapers() {
+  const n = Math.min(S.items.length, 10);
+  const g = el('papers'); g.innerHTML = '';
+  const ns = 'http://www.w3.org/2000/svg';
+  const slots = [{x:147,y:0,r:5},{x:124,y:-4,r:-10},{x:170,y:-3,r:12},{x:135,y:-15,r:-4},{x:158,y:-17,r:8},{x:114,y:-13,r:-16},{x:178,y:-15,r:17},{x:126,y:-27,r:-7},{x:152,y:-29,r:5},{x:140,y:-39,r:1}];
+  const fills = ['#edeadf','#e8e4d8','#f0ece1','#e4e0d5','#eae6db'];
+  for (let i = 0; i < n; i++) {
+    const s = slots[i], f = fills[i%fills.length], cx = s.x+15, cy = s.y+19;
+    const paper = document.createElementNS(ns,'rect');
+    paper.setAttribute('x',s.x); paper.setAttribute('y',s.y); paper.setAttribute('width','30'); paper.setAttribute('height','38');
+    paper.setAttribute('rx','1.5'); paper.setAttribute('fill',f); paper.setAttribute('stroke','#b8b0a4'); paper.setAttribute('stroke-width','0.6');
+    paper.setAttribute('stroke-dasharray','2,0.4,1.5,0.5'); paper.setAttribute('transform',`rotate(${s.r},${cx},${cy})`);
+    const mkLine = yo => {
+      const l = document.createElementNS(ns,'line');
+      l.setAttribute('x1',s.x+5); l.setAttribute('y1',s.y+yo); l.setAttribute('x2',s.x+25); l.setAttribute('y2',s.y+yo);
+      l.setAttribute('stroke','#cdc6bc'); l.setAttribute('stroke-width','0.5'); l.setAttribute('stroke-dasharray','1.5,0.5');
+      l.setAttribute('transform',`rotate(${s.r},${cx},${cy})`); return l;
     };
-    reader.readAsText(file); e.target.value="";
-  };
-
-  const generateMeals = async () => {
-    if(!ingredients.trim()){setMealError("냉장고 재료를 입력해주세요.");return;}
-    const apiKey=localStorage.getItem("whl_apikey")||"";
-    if(!apiKey){setMealError("백업·복구 탭 하단에서 API 키를 먼저 저장해주세요.");return;}
-    setLoadingMeal(true); setMealError(""); setMealPlan(null);
-    try {
-      const res=await fetch("https://api.anthropic.com/v1/messages",{
-        method:"POST",
-        headers:{"Content-Type":"application/json","x-api-key":apiKey,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
-        body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:2500,
-          system:`건강한 한식 식단 전문가. 완전한 JSON만 반환. 절대 중간에 끊지 말 것. 형식 정확히 준수: {"plan":[{"day":"월","breakfast":{"menu":"메뉴명","tip":"팁(15자이내)"},"snack":{"menu":"메뉴명","tip":"팁(15자이내)"},"lunch":{"menu":"메뉴명","ingredients":["재료1","재료2","재료3"],"tip":"팁(15자이내)","kcal":"약 N kcal"}},{"day":"화",...},{"day":"수",...},{"day":"목",...},{"day":"금",...},{"day":"토",...},{"day":"일",...}]} 반드시 월화수목금토일 7개 전부 포함.`,
-          messages:[{role:"user",content:`냉장고 재료: ${ingredients}
-
-위 형식 그대로 7일 식단 JSON만 반환.`}]}),
-      });
-      if(!res.ok){const err=await res.json().catch(()=>({}));throw new Error(err?.error?.message||`HTTP ${res.status}`);}
-      const d=await res.json(); const text=d.content.map(i=>i.text||"").join("");
-      let clean=text.replace(/```json|```/g,"").trim();
-      // JSON이 잘린 경우 복구 시도
-      if(!clean.endsWith("}]}")) {
-        const lastComplete = clean.lastIndexOf('},"day":');
-        const lastDay = clean.lastIndexOf('{"day":');
-        if(lastDay > lastComplete) clean = clean.substring(0, lastDay);
-        // 닫는 괄호 보정
-        const opens = (clean.match(/\[/g)||[]).length - (clean.match(/\]/g)||[]).length;
-        const openBraces = (clean.match(/\{/g)||[]).length - (clean.match(/\}/g)||[]).length;
-        for(let i=0;i<openBraces;i++) clean+='}';
-        for(let i=0;i<opens;i++) clean+=']';
-      }
-      const plan=JSON.parse(clean).plan;
-      setMealPlan(plan); localStorage.setItem("whl_mealplan",JSON.stringify(plan));
-    } catch(e){setMealError("생성 실패: "+e.message);}
-    setLoadingMeal(false);
-  };
-
-  return (
-    <div style={{fontFamily:"Pretendard,-apple-system,sans-serif",background:T.bg,minHeight:"100vh",maxWidth:430,margin:"0 auto",color:T.ink,paddingBottom:88}}>
-
-      {/* Header */}
-      <div style={{padding:"32px 24px 0"}}>
-        <div style={{fontSize:10,letterSpacing:".18em",color:T.muted,marginBottom:4}}>WHOLENESS · 영육강건</div>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-end"}}>
-          <h1 style={{fontSize:28,fontWeight:800,letterSpacing:"-.03em",lineHeight:1.1}}>온전한 하루</h1>
-          <button onClick={()=>setShowCal(s=>!s)} style={{background:showCal?`${T.soul}15`:T.card,border:`1px solid ${showCal?T.soul+"70":T.border}`,borderRadius:10,padding:"7px 12px",cursor:"pointer",color:showCal?T.soul:T.sub,fontSize:12,fontWeight:600,display:"flex",alignItems:"center",gap:6,boxShadow:"0 1px 4px rgba(0,0,0,.06)",transition:"all .2s"}}>
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><rect x="1" y="2" width="10" height="9" rx="2" stroke="currentColor" strokeWidth="1.2"/><path d="M4 1v2M8 1v2" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/><path d="M1 5h10" stroke="currentColor" strokeWidth="1.2"/></svg>
-            {dateLabel}
-          </button>
-        </div>
-        {readonly&&<div style={{marginTop:7,fontSize:11,color:T.mind,fontWeight:600}}>📅 과거 기록 보기 — 수정 불가</div>}
-      </div>
-
-      {showCal&&<div style={{padding:"14px 24px 0"}}><MiniCalendar selected={selDate} onSelect={d=>{setSelDate(d);setShowCal(false);}}/></div>}
-
-      {/* Tabs */}
-      <div style={{display:"flex",gap:2,margin:"18px 24px 0",background:"#EDE8DE",borderRadius:14,padding:4}}>
-        {[["today","기록"],["dopamine","도파민 리셋"],["meal","식단 플래너"],["backup","백업·복구"]].map(([k,l])=>(
-          <button key={k} onClick={()=>setTab(k)} style={{flex:1,padding:"9px 4px",borderRadius:11,border:"none",cursor:"pointer",background:tab===k?T.card:"transparent",color:tab===k?T.ink:T.muted,fontWeight:tab===k?700:400,fontSize:12,boxShadow:tab===k?"0 1px 6px rgba(0,0,0,.08)":"none",transition:"all .2s"}}>{l}</button>
-        ))}
-      </div>
-
-      {/* ══ TODAY ══ */}
-      {tab==="today"&&(
-        <div style={{padding:"16px 24px 0",display:"flex",flexDirection:"column",gap:14}}>
-          <div style={{background:T.card,borderRadius:24,padding:"24px 18px 20px",border:`1px solid ${allOn?T.soul+"60":T.border}`,boxShadow:allOn?"0 0 0 2px rgba(124,111,247,.15),0 4px 24px rgba(0,0,0,.07)":"0 2px 16px rgba(0,0,0,.05)",transition:"border-color .4s,box-shadow .4s"}}>
-            <div style={{display:"flex",alignItems:"center",marginBottom:18}}>
-              <div style={{width:"40%",display:"flex",justifyContent:"center",flexShrink:0}}>
-                <PersonIcon soul={soulOn} body={bodyOn} mind={mindOn}/>
-              </div>
-              <div style={{flex:1}}>
-                <div style={{fontSize:38,fontWeight:900,letterSpacing:"-.04em",lineHeight:1,color:T.ink}}>{ss+bs+ms}<span style={{fontSize:14,color:T.muted,fontWeight:400,marginLeft:3}}> / 21</span></div>
-                <div style={{fontSize:11,color:T.muted,marginBottom:10}}>체크리스트 점수</div>
-                <div style={{display:"flex",gap:8}}>
-                  {[["soul",ss],["body",bs],["mind",ms]].map(([cat,s])=>(
-                    <div key={cat} style={{textAlign:"center"}}><Arc score={s} color={CAT[cat].color}/><div style={{fontSize:9,color:T.muted,marginTop:2}}>{CAT[cat].label}</div></div>
-                  ))}
-                </div>
-              </div>
-            </div>
-            <div style={{display:"flex",gap:10}}>
-              <CatButton meta={CAT.soul} active={soulOn} score={ss} onToggle={readonly?undefined:()=>setSoulOn(!soulOn)}/>
-              <CatButton meta={CAT.body} active={bodyOn} score={bs} onToggle={readonly?undefined:()=>setBodyOn(!bodyOn)}/>
-              <CatButton meta={CAT.mind} active={mindOn} score={ms} onToggle={readonly?undefined:()=>setMindOn(!mindOn)}/>
-            </div>
-            <div style={{textAlign:"center",marginTop:10}}>
-              {allOn?<span className="popIn" style={{fontSize:13,fontWeight:700,color:T.soul}}>🎉 오늘 하루 온전합니다!</span>:!readonly&&<span style={{fontSize:10,color:T.muted}}>탭해서 오늘의 카테고리를 활성화하세요</span>}
-            </div>
-          </div>
-
-          {Object.entries(CAT).map(([cat,meta])=>{
-            const s=cat==="soul"?ss:cat==="body"?bs:ms;
-            return (
-              <div key={cat} style={{background:T.card,borderRadius:20,overflow:"hidden",border:`1px solid ${T.border}`,boxShadow:"0 1px 8px rgba(0,0,0,.04)"}}>
-                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px 11px",borderBottom:`1px solid ${T.border}`,background:`linear-gradient(90deg,${meta.bg} 0%,transparent 80%)`}}>
-                  <div style={{display:"flex",alignItems:"center",gap:8}}><div style={{width:7,height:7,borderRadius:"50%",background:meta.color}}/><span style={{fontSize:13,fontWeight:800,color:meta.color,letterSpacing:".04em"}}>{meta.label}</span></div>
-                  <span style={{fontSize:12,fontWeight:700,color:meta.color}}>{s}&thinsp;/&thinsp;7</span>
-                </div>
-                <div style={{padding:"10px 12px",display:"flex",flexDirection:"column",gap:5}}>
-                  {CHECKLIST[cat].map(item=><CheckItem key={item.id} item={item} checked={!!dayData[item.id]} color={meta.color} bg={meta.bg} onToggle={()=>toggle(item.id)} readonly={readonly}/>)}
-                </div>
-              </div>
-            );
-          })}
-
-          {isToday&&<>
-            <button onClick={()=>setShowShare(s=>!s)} style={{background:allOn?`linear-gradient(135deg,${T.soul},${T.body})`:anyOn?T.soul:T.card,border:`1px solid ${anyOn?T.soul:T.border}`,borderRadius:16,padding:"14px",fontSize:13,fontWeight:700,cursor:"pointer",color:anyOn?"#fff":T.muted,display:"flex",alignItems:"center",justifyContent:"center",gap:8,boxShadow:allOn?`0 6px 24px ${T.soul}44`:anyOn?`0 3px 12px ${T.soul}30`:"none",transition:"all .3s"}}>
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="11" cy="2.5" r="1.5" stroke="currentColor" strokeWidth="1.2"/><circle cx="11" cy="11.5" r="1.5" stroke="currentColor" strokeWidth="1.2"/><circle cx="3" cy="7" r="1.5" stroke="currentColor" strokeWidth="1.2"/><path d="M4.3 6.2L9.7 3.3M4.3 7.8L9.7 10.7" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>
-              {showShare?"카드 닫기":"인스타 공유 카드"}{!anyOn&&<span style={{fontSize:10,opacity:.6}}>· 카테고리 활성화 후 이용</span>}
-            </button>
-            {showShare&&<div>
-              <div ref={shareRef} style={{borderRadius:28,overflow:"hidden",marginBottom:10}}>
-                <ShareCardEl dateStr={selDate} dayData={dayData} soulOn={soulOn} bodyOn={bodyOn} mindOn={mindOn} ss={ss} bs={bs} ms={ms}/>
-              </div>
-              <button onClick={saveImage} disabled={saving} style={{width:"100%",padding:"13px",background:saving?T.muted:"#1A1A1A",color:"#fff",border:"none",borderRadius:14,fontSize:13,fontWeight:700,cursor:saving?"not-allowed":"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:8,boxShadow:"0 4px 14px rgba(0,0,0,.18)",transition:"all .2s"}}>
-                <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1v8M4 6l3 3 3-3" stroke="white" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/><path d="M1 10v1a2 2 0 002 2h8a2 2 0 002-2v-1" stroke="white" strokeWidth="1.4" strokeLinecap="round"/></svg>
-                {saving?"저장 중...":"이미지 저장 (사진첩)"}
-              </button>
-              {saveMsg&&<div style={{textAlign:"center",fontSize:12,color:T.body,marginTop:8,fontWeight:600}}>{saveMsg}</div>}
-            </div>}
-          </>}
-        </div>
-      )}
-
-      {/* ══ DOPAMINE ══ */}
-      {tab==="dopamine"&&(
-        <div style={{padding:"16px 24px 0",display:"flex",flexDirection:"column",gap:14}}>
-          <div style={{background:T.card,borderRadius:20,padding:"20px 18px",border:`1px solid ${T.border}`,boxShadow:"0 1px 8px rgba(0,0,0,.04)"}}>
-            <div style={{fontSize:9,letterSpacing:".16em",color:T.muted,marginBottom:8}}>🧠 오늘의 뇌과학 인사이트</div>
-            <div style={{fontSize:14,fontWeight:700,lineHeight:1.65,color:T.ink,marginBottom:10}}>{insight.title}</div>
-            <div style={{fontSize:11,color:T.sub,lineHeight:1.8}}>{insight.body} <span style={{color:T.soul,fontWeight:600}}>{insight.kw}</span> {insight.kb}</div>
-          </div>
-          <div style={{background:T.card,borderRadius:20,overflow:"hidden",border:`1px solid ${T.border}`,boxShadow:"0 1px 8px rgba(0,0,0,.04)"}}>
-            <div style={{padding:"16px 18px 14px",background:`linear-gradient(90deg,${T.soulBg},transparent)`,borderBottom:`1px solid ${T.border}`}}>
-              <div style={{fontSize:9,letterSpacing:".16em",color:T.muted,marginBottom:6}}>오늘의 리셋 미션</div>
-              <div style={{fontSize:15,fontWeight:700,lineHeight:1.55,color:T.ink}}>{mission.text}</div>
-            </div>
-            <div style={{padding:"14px 18px 16px"}}>
-              <div style={{background:T.soulBg,borderRadius:12,padding:"10px 14px",marginBottom:14,border:`1px solid ${T.soul}20`}}>
-                <div style={{fontSize:9,color:T.soul,fontWeight:700,marginBottom:4,letterSpacing:".1em"}}>왜 효과적인가</div>
-                <div style={{fontSize:11,color:T.sub,lineHeight:1.7}}>{mission.sci}</div>
-              </div>
-              {!missionDone?<button onClick={()=>{setMissionDone(true);setShowReward(true);setTimeout(()=>setShowReward(false),5000);}} style={{width:"100%",padding:"13px",background:T.soul,color:"#fff",border:"none",borderRadius:12,fontSize:13,fontWeight:700,cursor:"pointer",boxShadow:`0 4px 14px ${T.soul}44`}}>미션 완료 ✓</button>:<div style={{textAlign:"center",padding:"13px",background:T.soulBg,borderRadius:12,color:T.soul,fontWeight:700,fontSize:13}}>✓ 오늘 미션 완료</div>}
-            </div>
-          </div>
-          {showReward&&<div style={{background:"linear-gradient(145deg,#1C1624,#122018)",borderRadius:20,padding:"22px 18px",textAlign:"center",border:`1px solid ${T.soul}40`,boxShadow:`0 8px 28px ${T.soul}22`}}><div style={{fontSize:34,marginBottom:10}}>🌟</div><div style={{fontSize:14,fontWeight:700,lineHeight:1.7,color:"#fff"}}>{mission.reward}</div></div>}
-          <div style={{background:T.card,borderRadius:20,padding:"18px 16px",border:`1px solid ${T.border}`,boxShadow:"0 1px 8px rgba(0,0,0,.04)"}}>
-            <div style={{fontSize:11,fontWeight:700,color:T.sub,marginBottom:12,letterSpacing:".06em"}}>이번 주 미션</div>
-            {MISSIONS.map((m,i)=>(
-              <div key={i} style={{display:"flex",gap:12,alignItems:"flex-start",padding:"9px 0",borderBottom:i<MISSIONS.length-1?`1px solid ${T.border}`:"none"}}>
-                <div style={{fontSize:10,fontWeight:700,minWidth:18,paddingTop:2,color:i===new Date().getDay()?T.soul:T.muted}}>{["일","월","화","수","목","금","토"][i]}</div>
-                <div style={{fontSize:12,color:i===new Date().getDay()?T.ink:T.sub,lineHeight:1.55,fontWeight:i===new Date().getDay()?600:400}}>{m.text}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* ══ MEAL ══ */}
-      {tab==="meal"&&(
-        <div style={{padding:"16px 24px 0",display:"flex",flexDirection:"column",gap:14}}>
-          <div style={{background:T.card,borderRadius:20,padding:"20px 18px",border:`1px solid ${T.border}`,boxShadow:"0 1px 8px rgba(0,0,0,.04)"}}>
-            <div style={{fontSize:13,fontWeight:700,color:T.ink,marginBottom:4}}>냉장고 재료 입력</div>
-            <div style={{fontSize:11,color:T.muted,marginBottom:10}}>탭을 눌러 재료를 추가하거나 직접 입력하세요</div>
-            {[
-              {cat:"단백질",items:["달걀","닭가슴살","두부","참치캔","삼겹살","소고기","연어","새우","베이컨"]},
-              {cat:"채소",  items:["양배추","김치","시금치","당근","양파","대파·쪽파","마늘","애호박","버섯","오이","파프리카"]},
-              {cat:"탄수화물",items:["곡물밥","밥","고구마","감자","오트밀","식빵","파스타","라이스페이퍼"]},
-              {cat:"양념·기타",items:["간장","고추장","된장","참기름","올리브오일","굴소스","쯔유","스리라차","마요네즈","홀그레인머스터드","치즈","김","요거트"]},
-            ].map(({cat,items})=>(
-              <div key={cat} style={{marginBottom:8}}>
-                <div style={{fontSize:9,fontWeight:700,color:T.muted,letterSpacing:".1em",marginBottom:5}}>{cat}</div>
-                <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
-                  {items.map(item=>{
-                    const on=ingredients.split(",").map(s=>s.trim()).includes(item);
-                    return <button key={item} onClick={()=>{ if(on){setIngredients(prev=>prev.split(",").map(s=>s.trim()).filter(s=>s!==item).join(", "));}else{setIngredients(prev=>prev?prev.trimEnd()+(prev.trimEnd().endsWith(",")?" ":", ")+item:item);} }} style={{fontSize:11,padding:"4px 10px",borderRadius:20,cursor:"pointer",fontFamily:"Pretendard,sans-serif",fontWeight:on?700:400,background:on?T.body:"#F0EDE8",color:on?"#fff":T.sub,border:`1px solid ${on?T.body:T.border}`,transition:"all .15s"}}>{on?"✓ ":""}{item}</button>;
-                  })}
-                </div>
-              </div>
-            ))}
-            <textarea value={ingredients} onChange={e=>setIngredients(e.target.value)} rows={3} placeholder="추가 재료를 직접 입력하거나 위에서 선택하세요..." style={{width:"100%",marginTop:8,padding:"12px 14px",borderRadius:12,border:`1px solid ${T.border}`,background:T.surface,color:T.ink,fontFamily:"Pretendard,sans-serif",fontSize:13,outline:"none",resize:"vertical",lineHeight:1.6}}/>
-            <button onClick={generateMeals} disabled={loadingMeal} style={{width:"100%",marginTop:12,padding:"13px",background:loadingMeal?T.muted:T.body,color:"#fff",border:"none",borderRadius:12,fontSize:13,fontWeight:700,cursor:loadingMeal?"not-allowed":"pointer",boxShadow:loadingMeal?"none":`0 4px 14px ${T.body}44`,transition:"all .2s"}}>{loadingMeal?"🥗 생성 중...":"✨ AI 일주일 식단 플랜 생성"}</button>
-            {mealError&&<div style={{color:"#D05050",fontSize:11,marginTop:8,textAlign:"center"}}>{mealError}</div>}
-          </div>
-
-          {mealPlan&&(
-            <div>
-              <div ref={mealCardRef} style={{background:T.card,borderRadius:20,overflow:"hidden",border:`1px solid ${T.border}`,boxShadow:"0 1px 8px rgba(0,0,0,.04)"}}>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"14px 16px 12px",borderBottom:`1px solid ${T.border}`,background:`linear-gradient(90deg,${T.bodyBg},transparent)`}}>
-                  <div style={{display:"flex",alignItems:"center",gap:8}}><div style={{width:7,height:7,borderRadius:"50%",background:T.body}}/><span style={{fontSize:13,fontWeight:800,color:T.body}}>이번 주 식단 플랜</span></div>
-                  <button onClick={()=>{setMealPlan(null);localStorage.removeItem("whl_mealplan");}} style={{fontSize:10,color:T.muted,background:"none",border:`1px solid ${T.border}`,borderRadius:8,padding:"4px 10px",cursor:"pointer",fontFamily:"Pretendard,sans-serif"}}>🔄 새로 생성</button>
-                </div>
-                <div style={{padding:"12px"}}>
-                  {mealPlan.map((day,i)=>(
-                    <div key={i} style={{marginBottom:10,borderRadius:14,overflow:"hidden",border:`1px solid ${T.border}`}}>
-                      <div style={{background:T.body,padding:"7px 14px"}}><span style={{fontSize:12,fontWeight:800,color:"#fff"}}>{day.day}요일</span></div>
-                      <div style={{background:T.surface,padding:"10px 14px",display:"flex",flexDirection:"column",gap:8}}>
-                        {day.breakfast&&<><div style={{display:"flex",gap:10,alignItems:"flex-start"}}><div style={{fontSize:9,fontWeight:700,color:"#E07C3A",minWidth:28,paddingTop:1}}>아침</div><div><div style={{fontSize:12,fontWeight:600,color:T.ink}}>{day.breakfast.menu}</div>{day.breakfast.tip&&<div style={{fontSize:10,color:T.muted,marginTop:1}}>💡 {day.breakfast.tip}</div>}</div></div><div style={{height:1,background:T.border}}/></>}
-                        {day.snack&&<><div style={{display:"flex",gap:10,alignItems:"flex-start"}}><div style={{fontSize:9,fontWeight:700,color:T.mind,minWidth:28,paddingTop:1}}>간식</div><div><div style={{fontSize:12,fontWeight:600,color:T.ink}}>{day.snack.menu}</div>{day.snack.tip&&<div style={{fontSize:10,color:T.muted,marginTop:1}}>💡 {day.snack.tip}</div>}</div></div><div style={{height:1,background:T.border}}/></>}
-                        {day.lunch&&<div style={{display:"flex",gap:10,alignItems:"flex-start"}}><div style={{fontSize:9,fontWeight:700,color:T.body,minWidth:28,paddingTop:1}}>점심</div><div style={{flex:1}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}><div style={{fontSize:12,fontWeight:600,color:T.ink}}>{day.lunch.menu}</div>{day.lunch.kcal&&<span style={{fontSize:9,color:T.muted}}>{day.lunch.kcal}</span>}</div><div style={{display:"flex",flexWrap:"wrap",gap:3,marginTop:4}}>{(day.lunch.ingredients||[]).map((ing,j)=><span key={j} style={{fontSize:9,padding:"2px 7px",background:T.bodyBg,color:T.body,borderRadius:20,fontWeight:500}}>{ing}</span>)}</div>{day.lunch.tip&&<div style={{fontSize:10,color:T.muted,marginTop:4,fontStyle:"italic"}}>💡 {day.lunch.tip}</div>}</div></div>}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <button onClick={saveMealImage} disabled={savingMeal} style={{width:"100%",marginTop:10,padding:"13px",background:savingMeal?T.muted:"#1A1A1A",color:"#fff",border:"none",borderRadius:14,fontSize:13,fontWeight:700,cursor:savingMeal?"not-allowed":"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:8,boxShadow:"0 4px 14px rgba(0,0,0,.18)",transition:"all .2s"}}>
-                <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1v8M4 6l3 3 3-3" stroke="white" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/><path d="M1 10v1a2 2 0 002 2h8a2 2 0 002-2v-1" stroke="white" strokeWidth="1.4" strokeLinecap="round"/></svg>
-                {savingMeal?"저장 중...":"식단 이미지 저장"}
-              </button>
-              {mealSaveMsg&&<div style={{textAlign:"center",fontSize:12,color:T.body,marginTop:8,fontWeight:600}}>{mealSaveMsg}</div>}
-            </div>
-          )}
-
-          <div style={{background:T.bodyBg,borderRadius:16,padding:"14px 16px",border:`1px solid ${T.body}20`}}>
-            <div style={{fontSize:11,fontWeight:700,color:T.body,marginBottom:8}}>건강 식단 원칙</div>
-            {["단백질 + 복합탄수화물 + 채소의 황금 비율","전날 밤 준비 = 아침 여유","색깔이 다양할수록 영양이 균형 잡힙니다"].map((t,i)=><div key={i} style={{fontSize:11,color:T.sub,marginBottom:3}}>· {t}</div>)}
-          </div>
-        </div>
-      )}
-
-      {/* ══ BACKUP ══ */}
-      {tab==="backup"&&(
-        <div style={{padding:"16px 24px 0",display:"flex",flexDirection:"column",gap:14}}>
-          <div style={{background:T.card,borderRadius:20,padding:"20px 18px",border:`1px solid ${T.border}`,boxShadow:"0 1px 8px rgba(0,0,0,.04)"}}>
-            <div style={{fontSize:10,letterSpacing:".14em",color:T.muted,marginBottom:12}}>📤 데이터 내보내기</div>
-            <div style={{fontSize:12,color:T.sub,lineHeight:1.7,marginBottom:16}}>지금까지의 모든 기록을 백업합니다.<br/>기기를 바꾸거나 앱을 초기화할 때 사용하세요.</div>
-            <div style={{display:"flex",flexDirection:"column",gap:8}}>
-              <button onClick={exportBackup} style={{width:"100%",padding:"13px",background:T.soul,color:"#fff",border:"none",borderRadius:12,fontSize:13,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:8,boxShadow:`0 4px 14px ${T.soul}44`}}>
-                <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1v8M4 6l3 3 3-3" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><path d="M1 10v1a2 2 0 002 2h8a2 2 0 002-2v-1" stroke="white" strokeWidth="1.5" strokeLinecap="round"/></svg>
-                JSON 파일로 저장
-              </button>
-              <button onClick={exportEmail} style={{width:"100%",padding:"13px",background:T.card,color:T.ink,border:`1px solid ${T.border}`,borderRadius:12,fontSize:13,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
-                <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="1" y="3" width="12" height="9" rx="2" stroke="currentColor" strokeWidth="1.3"/><path d="M1 5l6 4 6-4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>
-                메일로 보내기
-              </button>
-            </div>
-            {backupMsg&&<div style={{textAlign:"center",fontSize:12,color:T.body,marginTop:10,fontWeight:600}}>{backupMsg}</div>}
-          </div>
-          <div style={{background:T.card,borderRadius:20,padding:"20px 18px",border:`1px solid ${T.border}`,boxShadow:"0 1px 8px rgba(0,0,0,.04)"}}>
-            <div style={{fontSize:10,letterSpacing:".14em",color:T.muted,marginBottom:12}}>📥 데이터 복구</div>
-            <div style={{fontSize:12,color:T.sub,lineHeight:1.7,marginBottom:16}}>저장해둔 백업 파일(.json)을 불러와<br/>모든 기록을 복구합니다.</div>
-            <input ref={fileInputRef} type="file" accept=".json,application/json" onChange={importBackup} style={{display:"none"}}/>
-            <button onClick={()=>fileInputRef.current&&fileInputRef.current.click()} style={{width:"100%",padding:"13px",background:T.body,color:"#fff",border:"none",borderRadius:12,fontSize:13,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:8,boxShadow:`0 4px 14px ${T.body}44`}}>
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 9V1M4 4l3-3 3 3" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><path d="M1 10v1a2 2 0 002 2h8a2 2 0 002-2v-1" stroke="white" strokeWidth="1.5" strokeLinecap="round"/></svg>
-              백업 파일 불러오기
-            </button>
-            {restoreMsg&&<div style={{marginTop:12,padding:"10px 14px",background:restoreMsg.startsWith("✓")?T.bodyBg:"#FEE2E2",borderRadius:10,fontSize:12,fontWeight:600,color:restoreMsg.startsWith("✓")?T.body:"#DC2626",lineHeight:1.5}}>{restoreMsg}</div>}
-          </div>
-          <div style={{background:T.soulBg,borderRadius:16,padding:"14px 16px",border:`1px solid ${T.soul}20`}}>
-            <div style={{fontSize:11,fontWeight:700,color:T.soul,marginBottom:8}}>💡 백업 방법 안내</div>
-            {["정기적으로 JSON 파일로 저장해두세요","파일은 iCloud Drive나 Google Drive에 보관하면 안전해요","메일로 보내기는 본인 메일로 전송해 보관할 수 있어요","복구 시 기존 같은 날짜 데이터는 덮어씌워져요"].map((t,i)=><div key={i} style={{fontSize:11,color:T.sub,marginBottom:3}}>· {t}</div>)}
-          </div>
-          <ApiKeySection/>
-        </div>
-      )}
-
-      {/* Bottom nav */}
-      <div style={{position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:430,background:"rgba(245,242,236,.92)",backdropFilter:"blur(16px)",borderTop:`1px solid ${T.border}`,display:"flex",padding:"10px 0 16px"}}>
-        {[
-          ["today","기록","M9 5.5a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0ZM1 15.5c0-3.038 2.462-5.5 5.5-5.5s5.5 2.462 5.5 5.5"],
-          ["dopamine","리셋","M9 2C5.686 2 3 4.686 3 8c0 2.21 1.13 4.16 2.84 5.31L5.5 15h7l-.34-1.69A6 6 0 0 0 15 8c0-3.314-2.686-6-6-6ZM7 15.5h4"],
-          ["meal","식단","M2 9h14M3 9a7 7 0 0 1 12 0M5 14.5c0 .828 1.791 1.5 4 1.5s4-.672 4-1.5M5 14.5V12m8 2.5V12M9 12V9"],
-          ["backup","백업","M9 1v10M6 8l3 3 3-3M2 13v2a2 2 0 002 2h10a2 2 0 002-2v-2"],
-        ].map(([k,l,p])=>(
-          <button key={k} onClick={()=>setTab(k)} style={{flex:1,background:"none",border:"none",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:3,color:tab===k?T.soul:T.muted,transition:"color .2s"}}>
-            <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d={p} stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg>
-            <span style={{fontSize:10,fontWeight:tab===k?700:400}}>{l}</span>
-            {tab===k&&<div style={{width:14,height:2,borderRadius:1,background:T.soul}}/>}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
+    g.appendChild(paper); g.appendChild(mkLine(12)); g.appendChild(mkLine(19)); g.appendChild(mkLine(26));
+  }
+  el('splash-count').textContent = n===0 ? 'drop your first word.' : n+' fragment'+(n===1?'':'s')+' collected.';
 }
 
-ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
-  </script>
+function enterApp() {
+  el('splash').classList.add('fade');
+  setTimeout(() => {
+    el('splash').style.display = 'none'; el('splash').classList.remove('fade');
+    el('app').style.display = 'flex'; el('app').classList.add('show');
+  }, 480);
+}
+
+function goSplash() {
+  drawPapers(); el('app').classList.remove('show'); el('app').style.display = 'none';
+  const sp = el('splash');
+  sp.style.display = 'flex'; sp.style.opacity = '0'; sp.classList.remove('fade');
+  requestAnimationFrame(() => requestAnimationFrame(() => { sp.style.transition = 'opacity .4s ease'; sp.style.opacity = '1'; }));
+  setTimeout(() => { sp.style.transition = ''; }, 450);
+}
+
+function switchTab(tab, btn) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  el('tab-'+tab).classList.add('active'); btn.classList.add('active');
+  if (tab === 'archive') renderArchive();
+}
+
+function filterCat(btn) {
+  S.filterCat = btn.dataset.cat;
+  document.querySelectorAll('.cat-btn').forEach(b => b.classList.toggle('sel', b===btn));
+  renderItems();
+}
+
+async function addItem() {
+  const cat = el('new-cat').value, content = el('new-content').value.trim();
+  if (!content) return;
+  const item = { id:Date.now(), cat, content, date:fmt(new Date()), dateKey:dkey(new Date()) };
+  S.items.unshift(item);
+  el('new-content').value = '';
+  renderItems(); drawPapers(); updateHomeBadge();
+  syncBadge('저장 중…');
+  await sbUpsertItem(item);
+  syncBadge('✓ 동기화됨');
+}
+
+async function deleteItem(id) {
+  if (!confirm('이 글감을 삭제할까요?')) return;
+  S.items = S.items.filter(i => i.id !== id);
+  renderItems(); drawPapers(); updateHomeBadge();
+  await sbDeleteItem(id);
+}
+
+function startEdit(id) {
+  const card = el('item-'+id), item = S.items.find(i => i.id === id);
+  card.querySelector('.item-body').style.display = 'none';
+  card.querySelector('.item-actions').style.display = 'none';
+  const ta = document.createElement('textarea'); ta.className = 'item-edit-area'; ta.value = item.content; ta.rows = 3;
+  const row = document.createElement('div'); row.style.cssText = 'display:flex;gap:6px;margin-top:5px;';
+  const sv = document.createElement('button'); sv.className = 'btn btn-dark btn-sm'; sv.textContent = '저장';
+  sv.onclick = async () => { item.content = ta.value.trim()||item.content; renderItems(); syncBadge('저장 중…'); await sbUpsertItem(item); syncBadge('✓ 동기화됨'); };
+  const cn = document.createElement('button'); cn.className = 'btn btn-sm'; cn.textContent = '취소'; cn.onclick = renderItems;
+  row.append(sv, cn); card.append(ta, row);
+}
+
+function renderItems() {
+  const list = el('items-list');
+  const data = S.filterCat === 'all' ? S.items : S.items.filter(i => i.cat === S.filterCat);
+  el('basket-count').textContent = data.length + ' 개';
+  if (!data.length) { list.innerHTML = '<div class="empty-msg">아직 글감이 없어요.<br><span style="font-size:0.72rem;">인물 · 장소 · 단어 · 표현을 담아보세요</span></div>'; return; }
+  list.innerHTML = data.map(item => `
+    <div class="item-card" id="item-${item.id}">
+      <div class="item-header"><span class="tag tag-${item.cat}">${item.cat}</span><span class="item-date">${item.date}</span></div>
+      <div class="item-body">${esc(item.content)}</div>
+      <div class="item-actions">
+        <button class="btn btn-sm" onclick="startEdit(${item.id})">수정</button>
+        <button class="btn btn-sm btn-danger" onclick="deleteItem(${item.id})">삭제</button>
+      </div>
+    </div>`).join('');
+}
+
+function renderDocSelect() {
+  const sel = el('doc-select'); sel.innerHTML = '<option value="">— 글을 선택하세요 —</option>';
+  S.docs.forEach(doc => { const opt = document.createElement('option'); opt.value = doc.id; opt.textContent = (doc.title||'(제목 없음)')+' (v'+doc.versions.length+')'; sel.appendChild(opt); });
+  if (curDocId) sel.value = curDocId;
+}
+
+function onDocSelectChange() {
+  const id = Number(el('doc-select').value);
+  if (!id) { curDocId=null; el('note-editor-controls').style.display='none'; el('note-no-sel').style.display='flex'; el('note-area').style.display='none'; el('ver-section').classList.remove('visible'); return; }
+  selectDoc(id);
+}
+
+async function newDoc() {
+  const doc = { id:Date.now(), title:'', body:'', versions:[], createdAt:Date.now(), updatedAt:Date.now() };
+  S.docs.unshift(doc); renderDocSelect(); selectDoc(doc.id);
+  syncBadge('저장 중…'); await sbUpsertDoc(doc); syncBadge('✓ 동기화됨');
+  setTimeout(() => el('doc-title').focus(), 100);
+}
+
+function selectDoc(id) {
+  curDocId = id; const doc = S.docs.find(d => d.id === id); if (!doc) return;
+  el('doc-select').value = id; el('note-editor-controls').style.display = 'flex';
+  el('note-no-sel').style.display = 'none'; el('note-area').style.display = 'block';
+  el('ver-section').classList.add('visible');
+  el('doc-title').value = doc.title||''; el('note-area').value = doc.body||'';
+  lastAutoBody = doc.body||''; badge('—','var(--ink4)'); renderDocVersions(); startAutoSave();
+}
+
+function onDocTitleInput() {
+  const doc = S.docs.find(d => d.id === curDocId); if (!doc) return;
+  doc.title = el('doc-title').value; renderDocSelect();
+}
+function onNoteInput() { badge('editing…','var(--ink3)'); }
+
+async function saveDoc() {
+  if (!curDocId) { alert('글을 선택하거나 새 글을 만들어주세요.'); return; }
+  const doc = S.docs.find(d => d.id === curDocId); if (!doc) return;
+  const body = el('note-area').value.trim(); if (!body) { alert('내용이 없어요.'); return; }
+  doc.title = el('doc-title').value; doc.body = body; doc.updatedAt = Date.now();
+  const n = doc.versions.length + 1;
+  doc.versions.unshift({ label:'v'+n, type:'manual', date:fmt(new Date()), dateKey:dkey(new Date()), body });
+  renderDocVersions(); renderDocSelect(); badge('저장됨 ✓','#4a8a4a'); setTimeout(() => badge('—','var(--ink4)'), 2200);
+  syncBadge('저장 중…'); await sbUpsertDoc(doc); syncBadge('✓ 동기화됨');
+}
+
+function copyDoc() { const t = el('note-area').value; if (!t) return; navigator.clipboard.writeText(t).then(() => alert('복사되었어요!')); }
+
+async function deleteDoc() {
+  if (!curDocId) return;
+  if (!confirm('이 글을 삭제할까요? 모든 버전이 사라집니다.')) return;
+  const id = curDocId;
+  S.docs = S.docs.filter(d => d.id !== curDocId); curDocId = null;
+  el('note-editor-controls').style.display = 'none'; el('note-no-sel').style.display = 'flex';
+  el('note-area').style.display = 'none'; el('ver-section').classList.remove('visible');
+  renderDocSelect(); await sbDeleteDoc(id);
+}
+
+function renderDocVersions() {
+  const list = el('version-list'); if (!curDocId) { list.innerHTML = ''; return; }
+  const doc = S.docs.find(d => d.id === curDocId);
+  if (!doc||!doc.versions.length) { list.innerHTML = '<div style="font-size:0.67rem;color:var(--ink4);padding:2px;font-style:italic;">저장된 버전이 없습니다</div>'; return; }
+  list.innerHTML = doc.versions.map((v,i) => `
+    <div class="ver-card">
+      <span class="ver-lbl">${v.label}</span>
+      <span class="vt ${v.type==='auto'?'vt-auto':'vt-manual'}">${v.type==='auto'?'Auto':'Manual'}</span>
+      <span class="ver-date">${v.date}</span>
+      <div class="ver-btns">
+        <button class="btn btn-sm" onclick="restoreDocVersion(${i})">불러오기</button>
+        <button class="btn btn-sm btn-danger" onclick="deleteDocVersion(${i})">삭제</button>
+      </div>
+      <div class="ver-preview">${esc(v.body.slice(0,60))}${v.body.length>60?'…':''}</div>
+    </div>`).join('');
+}
+
+function restoreDocVersion(i) {
+  const doc = S.docs.find(d => d.id === curDocId); if (!doc) return;
+  if (!confirm(`[${doc.versions[i].label}] 버전을 불러올까요?`)) return;
+  el('note-area').value = doc.versions[i].body; doc.body = doc.versions[i].body;
+}
+
+async function deleteDocVersion(i) {
+  const doc = S.docs.find(d => d.id === curDocId); if (!doc) return;
+  if (!confirm('이 버전을 삭제할까요?')) return;
+  doc.versions.splice(i, 1); renderDocVersions(); renderDocSelect();
+  await sbUpsertDoc(doc);
+}
+
+function startAutoSave() {
+  if (autoTimer) clearInterval(autoTimer);
+  autoTimer = setInterval(async () => {
+    if (!curDocId) return;
+    const body = el('note-area').value.trim(); if (!body || body === lastAutoBody) return;
+    const doc = S.docs.find(d => d.id === curDocId); if (!doc) return;
+    doc.title = el('doc-title').value; doc.body = body; doc.updatedAt = Date.now();
+    const n = doc.versions.length + 1;
+    doc.versions.unshift({ label:'v'+n, type:'auto', date:fmt(new Date()), dateKey:dkey(new Date()), body });
+    lastAutoBody = body; renderDocVersions(); renderDocSelect();
+    await sbUpsertDoc(doc);
+  }, 180000);
+}
+
+function badge(t, c) { const b = el('autosave-badge'); b.textContent = t; b.style.color = c; }
+
+function updateInsertItems() {
+  const cat = el('insert-cat').value, itemSel = el('insert-item');
+  itemSel.innerHTML = '<option value="">글감 선택</option>';
+  if (!cat) { itemSel.disabled = true; return; }
+  const items = S.items.filter(i => i.cat === cat);
+  if (!items.length) { itemSel.innerHTML = '<option value="">해당 글감 없음</option>'; itemSel.disabled = true; return; }
+  items.forEach(item => { const opt = document.createElement('option'); opt.value = item.id; opt.textContent = item.content.length>26?item.content.slice(0,26)+'…':item.content; itemSel.appendChild(opt); });
+  itemSel.disabled = false;
+}
+
+function doInsertNote() {
+  const itemId = el('insert-item').value; if (!itemId) { alert('글감을 선택해주세요.'); return; }
+  const item = S.items.find(i => i.id === Number(itemId)); if (!item) return;
+  const ta = el('note-area'); ta.focus();
+  const s = ta.selectionStart, e2 = ta.selectionEnd;
+  const before = ta.value.slice(0,s), after = ta.value.slice(e2);
+  const ins = (before.length&&!before.endsWith('\n')&&!before.endsWith(' ')?' ':'')+item.content;
+  ta.value = before+ins+after; ta.selectionStart = ta.selectionEnd = s+ins.length;
+  ta.dispatchEvent(new Event('input',{bubbles:true}));
+}
+
+function switchSpellTab(tab, btn) {
+  document.querySelectorAll('.spell-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.spell-tab').forEach(b => b.classList.remove('active'));
+  el('spell-'+tab).classList.add('active'); btn.classList.add('active');
+}
+
+function copyTextFull(id) { navigator.clipboard.writeText(el(id).value).then(() => alert('복사되었어요!')); }
+
+function importToSpell(tid) {
+  const doc = curDocId ? S.docs.find(d => d.id === curDocId) : null;
+  const src = (doc&&doc.body)||el('note-area').value||'';
+  if (!src) { alert('노트에 내용이 없어요.'); return; }
+  el(tid).value = src;
+}
+
+async function runAISpell() {
+  const text = el('spell-ai-area').value.trim();
+  if (!text) { alert('교정받을 글을 먼저 입력해주세요.'); return; }
+  const btn = el('ai-spell-btn'); btn.disabled = true; btn.textContent = '교정 중…';
+  el('ai-loading').style.display = 'flex'; el('ai-spell-result').style.display = 'none'; el('ai-spell-copy-row').style.display = 'none';
+  lastAIResult = '';
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ model:'claude-sonnet-4-20250514', max_tokens:1000, messages:[{ role:'user', content:`아래 한국어 글의 맞춤법과 띄어쓰기를 교정하고, 문장을 자연스럽게 다듬어주세요.\n\n형식:\n[교정 전]\n(원문 그대로)\n\n[교정 후]\n(교정된 글)\n\n[변경 사항]\n(달라진 부분을 간략히 설명)\n\n글:\n${text}` }] })
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error.message||'API 오류');
+    const result = data.content?.[0]?.text||'결과를 받지 못했습니다.';
+    lastAIResult = result; el('ai-spell-result').textContent = result;
+    el('ai-spell-result').style.display = 'block'; el('ai-spell-copy-row').style.display = 'flex';
+  } catch(e) { el('ai-spell-result').textContent = '오류: '+e.message; el('ai-spell-result').style.display = 'block'; }
+  finally { el('ai-loading').style.display = 'none'; btn.disabled = false; btn.textContent = '✨ AI 교정 실행'; }
+}
+
+function clearAIResult() { el('spell-ai-area').value=''; el('ai-spell-result').style.display='none'; el('ai-spell-copy-row').style.display='none'; el('ai-loading').style.display='none'; lastAIResult=''; }
+function copyElem(id) { navigator.clipboard.writeText(el(id).textContent||'').then(()=>alert('복사되었어요!')); }
+
+function applyAIResult() {
+  if (!lastAIResult) { alert('교정 결과가 없어요.'); return; }
+  const match = lastAIResult.match(/\[교정 후\]\s*([\s\S]*?)(?:\[변경 사항\]|$)/);
+  if (match&&match[1]) {
+    const cleaned = match[1].trim();
+    if (curDocId) { el('note-area').value=cleaned; const doc=S.docs.find(d=>d.id===curDocId); if(doc){doc.body=cleaned;} alert('현재 노트에 적용됐어요.'); }
+    else { el('spell-copy-area').value=cleaned; alert('복붙용 탭에 넣었어요.'); }
+  } else { alert('직접 복사해 사용해주세요.'); }
+}
+
+function copyForNaver() {
+  const text = el('spell-ext-area').value.trim(); if (!text) { alert('검사할 글을 먼저 입력해주세요.'); return; }
+  navigator.clipboard.writeText(text).then(() => { const d=el('naver-copy-done'); d.style.display='inline'; setTimeout(()=>{d.style.display='none';},2000); });
+}
+function copyNaverUrl() {
+  navigator.clipboard.writeText('https://search.naver.com/search.naver?where=nexearch&query=맞춤법+검사기').then(()=>{ const d=el('naver-url-done'); d.style.display='inline'; setTimeout(()=>{d.style.display='none';},2000); });
+}
+
+function changeArchiveMonth(d) { archM+=d; if(archM>11){archM=0;archY++;} if(archM<0){archM=11;archY--;} renderArchive(); }
+
+function renderArchive() {
+  const months=['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+  el('archive-month-label').textContent=`${archY}년 ${months[archM]}`;
+  const prefix=`${archY}-${p2(archM+1)}`; const all=[];
+  S.items.filter(i=>i.dateKey&&i.dateKey.startsWith(prefix)).forEach(i=>all.push({dateKey:i.dateKey,time:i.date.slice(11),type:'basket',cat:i.cat,text:i.content,docId:null,vIdx:null}));
+  S.docs.forEach(doc=>{ doc.versions.forEach((v,vi)=>{ if(v.dateKey&&v.dateKey.startsWith(prefix)) all.push({dateKey:v.dateKey,time:v.date.slice(11),type:'note',label:v.label,title:doc.title||'(제목 없음)',text:v.body,docId:doc.id,vIdx:vi}); }); });
+  if(!all.length){el('archive-count').textContent='';el('tl-scroll').innerHTML='<div class="tl-empty">이 달의 기록이 없습니다</div>';return;}
+  const byDay={};
+  all.forEach(r=>{if(!byDay[r.dateKey])byDay[r.dateKey]=[];byDay[r.dateKey].push(r);});
+  const days=Object.keys(byDay).sort((a,b)=>b.localeCompare(a));
+  el('archive-count').textContent=all.length+'건';
+  el('tl-scroll').innerHTML=days.map((dk,di)=>{
+    const recs=byDay[dk].sort((a,b)=>a.time.localeCompare(b.time)); const d=new Date(dk+'T00:00:00');
+    return`<div class="tl-day-block">
+      <div class="tl-day-left"><div class="tl-day-num">${d.getDate()}</div><div class="tl-day-wd">${WD[d.getDay()]}</div>${di<days.length-1?'<div class="tl-day-stem"></div>':''}</div>
+      <div class="tl-day-right">${recs.map(r=>`<div class="tl-entry"><div class="tl-entry-top">${r.type==='basket'?`<span class="tag tag-${r.cat}" style="font-size:0.58rem;padding:1px 6px;">${r.cat}</span>`:`<span style="font-size:0.62rem;font-weight:700;color:var(--ink3);">${r.label} — ${esc(r.title)}</span>`}<span class="tl-entry-time">${r.time}</span>${r.type==='note'?`<button class="tl-del-btn" onclick="deleteArchiveVersion(${r.docId},${r.vIdx})">삭제</button>`:''}</div><div class="tl-entry-text">${esc(r.text.slice(0,150))}${r.text.length>150?'…':''}</div></div>`).join('')}</div></div>`;
+  }).join('');
+}
+
+async function deleteArchiveVersion(docId, vIdx) {
+  const doc = S.docs.find(d=>d.id===docId); if(!doc) return;
+  if(!confirm('이 버전 기록을 삭제할까요?')) return;
+  doc.versions.splice(vIdx,1); renderArchive(); if(curDocId===docId) renderDocVersions();
+  await sbUpsertDoc(doc);
+}
+
+function fmt(d)  { return`${d.getFullYear()}.${p2(d.getMonth()+1)}.${p2(d.getDate())} ${p2(d.getHours())}:${p2(d.getMinutes())}`; }
+function dkey(d) { return`${d.getFullYear()}-${p2(d.getMonth()+1)}-${p2(d.getDate())}`; }
+function p2(n)   { return String(n).padStart(2,'0'); }
+function esc(s)  { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>'); }
+function updateHomeBadge() { const n=S.items.length,b=el('home-badge'); if(n===0){b.style.display='none';}else{b.style.display='flex';b.textContent=n>99?'99+':String(n);} }
+function closeModal() { el('modal-overlay').classList.remove('open'); }
+
+initView();
+sb.auth.getSession().then(({ data: { session } }) => {
+  if (session) { onLogin(session.user); }
+});
+sb.auth.onAuthStateChange((_event, session) => {
+  if (!session && currentUser) doLogout();
+});
+</script>
 </body>
 </html>
