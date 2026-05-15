@@ -74,7 +74,13 @@ const CAT = {
 };
 const ALL_ITEMS = [...CHECKLIST.soul,...CHECKLIST.body,...CHECKLIST.mind];
 
-const todayStr = () => new Date().toISOString().slice(0,10);
+const todayStr = () => {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,"0");
+  const day = String(d.getDate()).padStart(2,"0");
+  return `${y}-${m}-${day}`;
+};
 const loadDay  = d => { try{ return JSON.parse(localStorage.getItem("whl_"+d)||"{}"); }catch{return{};} };
 const saveDay  = (d,v) => localStorage.setItem("whl_"+d, JSON.stringify(v));
 
