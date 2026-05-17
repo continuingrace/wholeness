@@ -265,7 +265,7 @@ function App() {
   const [mealSaveMsg,setMealSaveMsg] = useState("");
 
   const isToday  = selDate===todayStr();
-  const readonly = !isToday;
+  const readonly = false; // 과거 날짜도 수정 가능
   const mission  = MISSIONS[new Date().getDay()];
   const insight  = INSIGHTS[new Date().getDay()];
   const dateLabel = isToday?"오늘":new Date(selDate+"T12:00:00").toLocaleDateString("ko-KR",{month:"long",day:"numeric",weekday:"short"});
@@ -393,7 +393,7 @@ function App() {
             {dateLabel}
           </button>
         </div>
-        {readonly&&<div style={{marginTop:7,fontSize:11,color:T.mind,fontWeight:600}}>📅 과거 기록 보기 — 수정 불가</div>}
+        {readonly&&<div style={{marginTop:7,fontSize:11,color:T.mind,fontWeight:600}}>📅 과거 기록 보기 · 수정 가능</div>}
       </div>
 
       {showCal&&<div style={{padding:"14px 24px 0"}}><MiniCalendar selected={selDate} onSelect={d=>{setSelDate(d);setShowCal(false);}}/></div>}
