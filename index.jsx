@@ -1,5 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 
+const WORKER_URL = "https://lucky-paper-33a1.continuingrace.workers.dev";
+let wholenessAccessPassword = "";
+
 const FontLink = () => (
   <style>{`
     @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
@@ -422,20 +425,28 @@ export default function App() {
 
   const generateMeals = async () => {
     if (!ingredients.trim()) { setMealError("냉장고 재료를 입력해주세요."); return; }
+    if (!wholenessAccessPassword) {
+      wholenessAccessPassword = prompt("Wholeness AI 식단 생성 비밀번호를 입력해주세요.") || "";
+      if (!wholenessAccessPassword) return;
+    }
     setLoadingMeal(true); setMealError(""); setMealPlan(null);
     try {
-      const res = await fetch("https://api.anthropic.com/v1/messages",{
-        method:"POST", headers:{"Content-Type":"application/json"},
-        body: JSON.stringify({
-          model:"claude-sonnet-4-20250514", max_tokens:1200,
-          system:`건강한 한식 도시락 전문가. JSON만 반환. 형식: {"plan":[{"day":"월","menu":"메뉴","ingredients":["재료1","재료2"],"tip":"팁","kcal":"약 N kcal"},...]} 7개 요일 전부.`,
-          messages:[{role:"user",content:`냉장고: ${ingredients}\n\n일주일 건강 도시락 플랜`}],
-        }),
+      const res = await fetch(WORKER_URL + "/wholeness-meal-plan", {
+        method:"POST",
+        headers:{
+          "Content-Type":"application/json",
+          "X-Wholeness-Password":wholenessAccessPassword,
+        },
+        body:JSON.stringify({ingredients:ingredients.trim()}),
       });
-      const data = await res.json();
-      const text = data.content.map(i=>i.text||"").join("");
-      setMealPlan(JSON.parse(text.replace(/```json|```/g,"").trim()).plan);
-    } catch { setMealError("생성 실패. 다시 시도해주세요."); }
+      const data = await res.json().catch(()=>({}));
+      if (!res.ok) {
+        if (res.status===401 || res.status===403) wholenessAccessPassword="";
+        throw new Error(data.error || "식단 생성 요청에 실패했습니다.");
+      }
+      if (!Array.isArray(data.plan)) throw new Error("식단 응답 형식이 올바르지 않습니다.");
+      setMealPlan(data.plan);
+    } catch(e) { setMealError("생성 실패: " + e.message); }
     setLoadingMeal(false);
   };
 

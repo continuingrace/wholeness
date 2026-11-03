@@ -30,6 +30,8 @@
   <script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7/babel.min.js"></script>
   <script type="text/babel">
 const { useState, useEffect, useCallback, useRef } = React;
+const WORKER_URL = "https://lucky-paper-33a1.continuingrace.workers.dev";
+let wholenessAccessPassword = ""; // 메모리에만 유지하며 저장하지 않음
 
 const T = {
   bg:"#F5F2EC", card:"#FFFFFF", surface:"#FAFAF7", border:"#E8E3DA",
@@ -224,18 +226,10 @@ function ShareCardEl({ dateStr, dayData, soulOn, bodyOn, mindOn, ss, bs, ms }) {
 }
 
 function ApiKeySection() {
-  const [key,setKey]=useState(localStorage.getItem("whl_apikey")||"");
-  const [saved,setSaved]=useState(false);
-  const save=()=>{ key.trim()?localStorage.setItem("whl_apikey",key.trim()):localStorage.removeItem("whl_apikey"); setSaved(true); setTimeout(()=>setSaved(false),2000); };
   return (
     <div style={{background:T.card,borderRadius:20,padding:"20px 18px",border:`1px solid ${T.border}`,boxShadow:"0 1px 8px rgba(0,0,0,.04)"}}>
-      <div style={{fontSize:10,letterSpacing:".14em",color:T.muted,marginBottom:12}}>⚙️ AI 식단 생성 설정</div>
-      <div style={{fontSize:12,color:T.sub,lineHeight:1.7,marginBottom:12}}>Anthropic API 키를 저장하면 AI 식단 플래너를 사용할 수 있어요.<br/>키는 이 기기 로컬에만 저장돼요.</div>
-      <div style={{display:"flex",gap:8,marginBottom:8}}>
-        <input type="password" value={key} onChange={e=>setKey(e.target.value)} onKeyDown={e=>e.key==="Enter"&&save()} placeholder="sk-ant-api03-..." style={{flex:1,padding:"10px 12px",borderRadius:10,border:`1px solid ${T.border}`,background:T.surface,fontSize:12,fontFamily:"Pretendard,sans-serif",color:T.ink,outline:"none"}}/>
-        <button onClick={save} style={{padding:"10px 16px",background:T.soul,color:"#fff",border:"none",borderRadius:10,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"Pretendard,sans-serif",whiteSpace:"nowrap",boxShadow:`0 3px 10px ${T.soul}44`}}>{saved?"✓ 저장됨":"저장"}</button>
-      </div>
-      <div style={{fontSize:10,color:T.muted}}>API 키 발급 → <a href="https://console.anthropic.com" target="_blank" style={{color:T.soul,fontWeight:600}}>console.anthropic.com</a></div>
+      <div style={{fontSize:10,letterSpacing:".14em",color:T.muted,marginBottom:12}}>🔒 AI 식단 생성 보안</div>
+      <div style={{fontSize:12,color:T.sub,lineHeight:1.7}}>Anthropic API 키는 더 이상 이 기기에 저장하지 않아요.<br/>식단 생성 시 전용 비밀번호를 한 번 입력하면 앱을 닫기 전까지만 사용해요.</div>
     </div>
   );
 }
@@ -275,6 +269,11 @@ function App() {
     setDayData(loadDay(selDate));
     setShowShare(false);
   },[selDate]);
+
+  // 이전 버전에서 브라우저에 저장한 Anthropic 키를 제거한다.
+  useEffect(()=>{
+    localStorage.removeItem("whl_apikey");
+  },[]);
 
   // ★ dayData 바뀌면 저장 (오늘만)
   useEffect(()=>{
@@ -317,14 +316,14 @@ function App() {
   };
 
   const exportBackup = () => {
-    const data={}; Object.keys(localStorage).filter(k=>k.startsWith("whl_")).forEach(k=>{data[k]=localStorage.getItem(k);});
+    const data={}; Object.keys(localStorage).filter(k=>k.startsWith("whl_")&&k!=="whl_apikey").forEach(k=>{data[k]=localStorage.getItem(k);});
     const blob=new Blob([JSON.stringify({version:1,exportedAt:new Date().toISOString(),records:data},null,2)],{type:"application/json"});
     const url=URL.createObjectURL(blob); const a=document.createElement("a"); a.href=url; a.download=`wholeness_backup_${todayStr()}.json`; a.click(); URL.revokeObjectURL(url);
     setBackupMsg("✓ 백업 파일이 저장됐어요!"); setTimeout(()=>setBackupMsg(""),3000);
   };
 
   const exportEmail = () => {
-    const data={}; Object.keys(localStorage).filter(k=>k.startsWith("whl_")).forEach(k=>{data[k]=localStorage.getItem(k);});
+    const data={}; Object.keys(localStorage).filter(k=>k.startsWith("whl_")&&k!=="whl_apikey").forEach(k=>{data[k]=localStorage.getItem(k);});
     window.open(`mailto:?subject=${encodeURIComponent("온전한 하루 백업 데이터")}&body=${encodeURIComponent("아래 JSON을 복사해서 복구 시 사용하세요.\n\n"+JSON.stringify({version:1,exportedAt:new Date().toISOString(),records:data}))}`);
   };
 
@@ -336,7 +335,7 @@ function App() {
         const parsed=JSON.parse(ev.target.result);
         const records=parsed.records||parsed;
         let count=0;
-        Object.entries(records).forEach(([k,v])=>{ if(k.startsWith("whl_")){localStorage.setItem(k,v);count++;} });
+        Object.entries(records).forEach(([k,v])=>{ if(k.startsWith("whl_")&&k!=="whl_apikey"){localStorage.setItem(k,v);count++;} });
         const t=todayStr(); setSelDate(t); setDayData(loadDay(t));
         setRestoreMsg(`✓ ${count}일치 기록이 복구됐어요!`);
       } catch{ setRestoreMsg("파일 형식이 올바르지 않아요."); }
@@ -347,34 +346,30 @@ function App() {
 
   const generateMeals = async () => {
     if(!ingredients.trim()){setMealError("냉장고 재료를 입력해주세요.");return;}
-    const apiKey=localStorage.getItem("whl_apikey")||"";
-    if(!apiKey){setMealError("백업·복구 탭 하단에서 API 키를 먼저 저장해주세요.");return;}
+    if(!wholenessAccessPassword){
+      wholenessAccessPassword=prompt("Wholeness AI 식단 생성 비밀번호를 입력해주세요.")||"";
+      if(!wholenessAccessPassword)return;
+    }
     setLoadingMeal(true); setMealError(""); setMealPlan(null);
     try {
-      const res=await fetch("https://api.anthropic.com/v1/messages",{
+      const res=await fetch(WORKER_URL+"/wholeness-meal-plan",{
         method:"POST",
-        headers:{"Content-Type":"application/json","x-api-key":apiKey,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
-        body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:2500,
-          system:`건강한 한식 식단 전문가. 완전한 JSON만 반환. 절대 중간에 끊지 말 것. 형식 정확히 준수: {"plan":[{"day":"월","breakfast":{"menu":"메뉴명","tip":"팁(15자이내)"},"snack":{"menu":"메뉴명","tip":"팁(15자이내)"},"lunch":{"menu":"메뉴명","ingredients":["재료1","재료2","재료3"],"tip":"팁(15자이내)","kcal":"약 N kcal"}},{"day":"화",...},{"day":"수",...},{"day":"목",...},{"day":"금",...},{"day":"토",...},{"day":"일",...}]} 반드시 월화수목금토일 7개 전부 포함.`,
-          messages:[{role:"user",content:`냉장고 재료: ${ingredients}
-
-위 형식 그대로 7일 식단 JSON만 반환.`}]}),
+        headers:{
+          "Content-Type":"application/json",
+          "X-Wholeness-Password":wholenessAccessPassword
+        },
+        body:JSON.stringify({ingredients:ingredients.trim()}),
       });
-      if(!res.ok){const err=await res.json().catch(()=>({}));throw new Error(err?.error?.message||`HTTP ${res.status}`);}
-      const d=await res.json(); const text=d.content.map(i=>i.text||"").join("");
-      let clean=text.replace(/```json|```/g,"").trim();
-      // JSON이 잘린 경우 복구 시도
-      if(!clean.endsWith("}]}")) {
-        const lastComplete = clean.lastIndexOf('},"day":');
-        const lastDay = clean.lastIndexOf('{"day":');
-        if(lastDay > lastComplete) clean = clean.substring(0, lastDay);
-        // 닫는 괄호 보정
-        const opens = (clean.match(/\[/g)||[]).length - (clean.match(/\]/g)||[]).length;
-        const openBraces = (clean.match(/\{/g)||[]).length - (clean.match(/\}/g)||[]).length;
-        for(let i=0;i<openBraces;i++) clean+='}';
-        for(let i=0;i<opens;i++) clean+=']';
+      const data=await res.json().catch(()=>({}));
+      if(!res.ok){
+        if(res.status===401||res.status===403){
+          wholenessAccessPassword="";
+          throw new Error("접근 비밀번호가 올바르지 않습니다.");
+        }
+        throw new Error(data.error||"식단 생성 요청에 실패했습니다.");
       }
-      const plan=JSON.parse(clean).plan;
+      const plan=Array.isArray(data.plan)?data.plan:null;
+      if(!plan)throw new Error("식단 응답 형식이 올바르지 않습니다.");
       setMealPlan(plan); localStorage.setItem("whl_mealplan",JSON.stringify(plan));
     } catch(e){setMealError("생성 실패: "+e.message);}
     setLoadingMeal(false);
